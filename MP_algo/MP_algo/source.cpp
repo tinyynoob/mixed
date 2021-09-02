@@ -1,4 +1,5 @@
-﻿#include <iostream>
+﻿/* ref:https://www.itread01.com/content/1549184776.html */
+#include <iostream>
 #include <fstream>
 using namespace std;
 
@@ -19,8 +20,47 @@ int main()
     f >> p;
     //cout << text << endl << p;
     f.close();
-    MP(p, t);
+
+    MP(text, p);
+
     return 0;
+}
+
+void preMP(const char* x, int m, int mpNext[])
+{
+    int i, j;
+    mpNext[0] = -1;
+    for (i = 0, j = -1; i < m; i++, j++) {
+        while (j >= 0 && x[j] != x[i])
+            j = mpNext[j];
+        mpNext[i + 1] = j + 1;
+    }
+}
+
+void MP(string text, string p)
+{
+    int i, j;
+    const int p_len = p.length();
+    const int t_len = text.length();
+    const char* pInC = p.c_str();
+    const char* tInC = text.c_str();
+    int* mpNext;
+    if (p_len > t_len) {
+        cout << "Unsuccessful match" << endl;
+        return;
+    }
+    mpNext = new int[p_len + 1];
+    preMP(pInC, p_len, mpNext);
+    for (i = 0, j = 0; i < t_len; i++, j++) {
+        while (j >= 0 && pInC[j] != tInC[i])
+            j = mpNext[j];
+        if (j >= p_len-1) { //j=2 (0->1->2)  length (3)-1=2
+            cout << "Matching index found at " << i - j << endl;
+            j = mpNext[j]; //against ++
+        }
+    }
+    delete mpNext;
+    return;
 }
 
 /*
