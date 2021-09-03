@@ -26,79 +26,47 @@ int main()
     return 0;
 }
 
-void preMP(const char* x, int m, int mpNext[])
+void preMP(const char* x, int m, int next[])
 {
     int i, j;
-    mpNext[0] = -1;
+    next[0] = -1;
     for (i = 0, j = -1; i < m; i++, j++) {
         while (j >= 0 && x[j] != x[i])
-            j = mpNext[j];
-        mpNext[i + 1] = j + 1;
+            j = next[j];
+        next[i + 1] = j + 1;
     }
 }
 
 void MP(string text, string p)
 {
     int i, j;
+    short flag = 0;
     const int p_len = p.length();
     const int t_len = text.length();
     const char* pInC = p.c_str();
     const char* tInC = text.c_str();
-    int* mpNext;
+    int* next;
     if (p_len > t_len) {
         cout << "Unsuccessful match" << endl;
         return;
     }
-    mpNext = new int[p_len + 1];
-    preMP(pInC, p_len, mpNext);
+    next = new int[p_len + 1];
+    preMP(pInC, p_len, next);
     for (i = 0, j = 0; i < t_len; i++, j++) {
         while (j >= 0 && pInC[j] != tInC[i])
-            j = mpNext[j];
+            j = next[j];
         if (j >= p_len-1) { //j=2 (0->1->2)  length (3)-1=2
             cout << "Matching index found at " << i - j << endl;
-            j = mpNext[j]; //against ++
+            flag = 1;
+            j = next[j];
         }
     }
-    delete mpNext;
+    delete []next;
+    if (!flag) 
+        cout << "Unsuccessful match" << endl;
     return;
 }
 
-/*
-void preMP(const char* x, int m, int mpNext[])
-{
-    int i, j;
-    i = 0;
-    j = mpNext[0] = -1;
-    while (i < m) {
-        while (j > -1 && x[i] != x[j])
-            j = mpNext[j];
-        mpNext[++i] = ++j;
-    }
-}
-void MP(string p, string t) {
-    int m = p.length();
-    int n = t.length();
-    const char* pInC = p.c_str();
-    const char* tInC = t.c_str();
-    int i = 0, j = 0;
-    int* mpNext;
-    if (m > n) {
-        cout << "Unsuccessful match" << endl;
-        return;
-    }
-    mpNext = (int*)malloc(sizeof(int) * (m+1));
-    preMP(pInC, m, mpNext);
-    while (j < n) {
-        while (i > -1 && pInC[i] != tInC[j])
-            i = mpNext[i];
-        i++; j++;
-        if (i >= m) {
-            cout << "Matching index found at " << j - i << endl;
-            i = mpNext[i];
-        }
-    }
-}
-*/
 
 // 執行程式: Ctrl + F5 或 [偵錯] > [啟動但不偵錯] 功能表
 // 偵錯程式: F5 或 [偵錯] > [啟動偵錯] 功能表
