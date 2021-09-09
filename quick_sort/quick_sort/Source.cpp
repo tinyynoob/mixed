@@ -16,10 +16,12 @@ public:
         for (i = 0; i < length; i++)
             list[i] = _data[i];
     }
+    ~quickSort() {
+        delete[]list;
+    }
     void quick_sort(int, int);
-    void out_and_delData();
+    void out();
 };
-
 
 int main()
 {
@@ -46,7 +48,7 @@ int main()
     f.close();
     A = new quickSort(n, list); delete[]list;
     A->quick_sort(0, n - 1);
-    A->out_and_delData();
+    A->out();
     delete A;
 	return 0;
 }
@@ -78,9 +80,8 @@ void quickSort::list_swap(int m, int n) {
     list[n] = temp;
 }
 
-void quickSort::out_and_delData() {
+void quickSort::out() {
     int i;
     for (i = 0; i < length; i++)     //print result
         cout << list[i] << ' ';
-    delete []list;
 }
