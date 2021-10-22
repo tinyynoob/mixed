@@ -1,4 +1,2 @@
 ﻿  Source.cpp
-D:\code\learingCPP\learingCPP\Source.cpp(33,21): error C2248: 'role::v': 無法存取 private 成員 (宣告在類別 'role' 中)
-D:\code\learingCPP\learingCPP\Source.cpp(6): message : 請參閱 'role::v' 的宣告
-D:\code\learingCPP\learingCPP\Source.cpp(4): message : 請參閱 'role' 的宣告
+  learingCPP.vcxproj -> D:\code\learingCPP\Debug\learingCPP.exe

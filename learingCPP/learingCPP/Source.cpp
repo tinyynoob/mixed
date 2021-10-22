@@ -1,36 +1,28 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include<iostream>
+using namespace std;
 
-class role{
+template <class T> class Node {
+	T data;
+	Node<T>* next;
+};
+
+template <class T> class List {
 private:
-	int v;
+	int length;
+	Node<T>* head;	// ?
 public:
-	role() {
-		v = 3;
+	~List() {
+		
 	}
-	int hp_max;
-	int hp;
-	void bleed(int n){
-		if (hp <= n)
-			hp = 0;
-		hp = hp - n;
-	}
-
+	int getLength();
+	void addTail(T value);
+	void addAt(int at, T value);
+	void deleteTail();
+	void deleteAt(int at);
 };
 
 int main()
 {
-	int i;
-	role lead;
-	lead.hp_max = 100;
-	lead.hp = lead.hp_max;
-	printf("%d\n", lead.hp);
-	lead.bleed(3);
-	printf("%d\n", lead.hp);
-	role* finger = new role;
-	printf("%p\n", finger);
-	printf("%p\n", &finger);
-	printf("%d\n", lead.v);
-	system("pause");
+	
 	return 0;
 }
