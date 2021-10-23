@@ -8,7 +8,7 @@ using namespace std;
 int main()
 {
     list <int> myList;
-    list <int>::iterator it = myList.begin();
+    list <int>::iterator it;
     int i,n,data;
     cout<<"number of elements:";
     cin>>n;
@@ -21,6 +21,7 @@ int main()
     cin>>n;
     cout<<"insert data:";
     cin>>data;
+    it = myList.begin();
     for(i=0;i<n;i++)
         ++it;
     myList.insert(it,data);
