@@ -6,14 +6,13 @@ using namespace std;
 
 list <int> reverse_list(list <int>);
 
-
 int main()
 {
     list <int> myList;
     list <int>::iterator it;
     ifstream file;
     int i,index,n,data,branch;
-    file.open("init.txt");
+    file.open("list_init.txt");
     if(file.is_open()){
         file>>n;
         for(i=0;i<n;i++){
