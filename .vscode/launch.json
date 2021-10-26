@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "g++.exe - 建置及偵錯使用中的檔案",
+            "name": "g++.exe - debugging",
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
@@ -13,7 +13,8 @@
             "stopAtEntry": false,
             "cwd": "C:\\MinGW\\bin",
             "environment": [],
-            "externalConsole": false,
+            //"console": "externalTerminal",
+            "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "C:\\MinGW\\bin\\gdb.exe",
             "setupCommands": [
