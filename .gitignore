@@ -1,6 +1,10 @@
 MP_algo/Debug
 quick_sort/Debug
 .vs
+!SIC/*.asm
+*.int
+*.lst
+
 
 # Prerequisites
 *.d

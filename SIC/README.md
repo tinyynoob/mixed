@@ -1,0 +1,1 @@
+This folder is for the Simplified Instructional Computer (SIC) assembly.
