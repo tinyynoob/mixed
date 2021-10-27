@@ -7,7 +7,7 @@ char * convert(char * s, int numRows);
 int main(){
     char s[1000];
     int numRows = 1;
-    strcpy(s, "A");
+    strcpy(s, "ABC");
     puts(convert(s,numRows));
     system("pause");
     return 0;
@@ -15,9 +15,12 @@ int main(){
 
 char * convert(char * s, int numRows){
     int i, j, length, eachLength ,*idx, index;
-    char **rows, *ans;
+    char **rows;
     length = strlen(s);
-    eachLength = length/2 +2;
+    if(numRows==1)
+        eachLength = length+1;
+    else
+        eachLength = length/2 +2;
     rows = (char**)malloc(sizeof(char*)*numRows);
     idx = (int*)malloc(sizeof(int)*numRows);
     for(i=0; i<numRows; i++){
@@ -37,16 +40,14 @@ char * convert(char * s, int numRows){
         if(i>=length)
             break;
     }
-    ans = (char*)malloc(sizeof(char)*length);
     index = 0;
-    for(i=0;i<numRows;i++){
+    for(i=0; i<numRows&&index<length; i++){
         for(j=0; rows[i][j]!='\0'; j++)
-            ans[index++] = rows[i][j];
+            s[index++] = rows[i][j];
     }
-    ans[index] = '\0';
     for(i=0;i<numRows;i++)
         free(rows[i]);
     free(rows);
     free(idx);
-    return ans;
+    return s;
 }
