@@ -1,17 +1,4 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
 
-char * convert(char * s, int numRows);
-
-int main(){
-    char s[1000];
-    int numRows = 1;
-    strcpy(s, "ABC");
-    puts(convert(s,numRows));
-    system("pause");
-    return 0;
-}
 
 char * convert(char * s, int numRows){
     int i, j, length, eachLength ,*idx, index;
