@@ -2,48 +2,42 @@
 #include<stdlib.h>
 #include<string.h>
 
-int lengthOfLongestSubstring(char*);
-int maxx(int, int);
+int reverse(int x);
 
 int main()
 {
-    char s[1000];
-    strcpy(s,"aabaab!bb");
-    printf("%s\n",s);
-    printf("%d\n",lengthOfLongestSubstring(s));
+    int n;
+    n = 123;
+    printf("%d\n",reverse(n));
     system("pause");
     return 0;
 }
 
-int lengthOfLongestSubstring(char * s){
-    int i, index, ans, look_up, left_bound;
-    unsigned short appeared_table[95];      //failed
-    char *p;
-    
-    for(i=0;i<95;i++)   //use ascii code (subtract 32) as the index of the table
-        appeared_table[i] = -1;
-    ans = 0;
-    left_bound = -1;     //is used to mark the last repeated position
-    index = 0;
-    for(p=s; *p; p++){
-        look_up = (*p)-32;      // 32 == ' '
-        if(appeared_table[look_up] == -1)
-            i = index - left_bound;
-        else{
-            i = index - maxx(left_bound, appeared_table[look_up]);
-            if(appeared_table[look_up] > left_bound)
-                left_bound = appeared_table[look_up];
-        }
-
-        if(i>ans)   //if a longer substring is found
-            ans = i;
-        appeared_table[look_up] = index++;  //update the table
+int reverse(int x){
+    long n;
+    char *arr, sign=0, i, digitNum;
+    if(x<0){
+        sign = 1;
+        x*= -1;
     }
-    return ans;
-}
-
-int maxx(int a, int b){
-    if(a>b)
-        return a;
-    return b;
+    digitNum = 1;
+    for(n=x; n/10; n/=10)
+        digitNum++;
+    arr = (char*)malloc(sizeof(char)*digitNum);
+    i=0;
+    for(n=x; n/10; n/=10)      //destruct
+        arr[i++] = n%10;
+    arr[i] = n;
+    
+    i = 0;
+    n = arr[i++];
+    while(i<digitNum){    //construct
+        n*= 10;
+        n+= arr[i++];
+    }
+    if(sign)
+        n*= -1;
+    
+    free(arr);
+    return n;
 }
