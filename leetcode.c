@@ -2,55 +2,46 @@
 #include<stdlib.h>
 #include<string.h>
 
-char * convert(char * s, int numRows);
+int lengthOfLongestSubstring(char*);
+int maxx(int, int);
 
-int main(){
+int main()
+{
     char s[1000];
-    int numRows = 1;
-    strcpy(s, "ABC");
-    puts(convert(s,numRows));
+    strcpy(s,"aabaab!bb");
+    printf("%s\n",s);
+    printf("%d\n",lengthOfLongestSubstring(s));
     system("pause");
     return 0;
 }
 
-char * convert(char * s, int numRows){
-    int i, j, length, eachLength ,*idx, index;
-    char **rows;
-    length = strlen(s);
-    if(numRows==1)
-        eachLength = length;
-    else
-        eachLength = length/2 +1;
-    rows = (char**)malloc(sizeof(char*)*numRows);
-    idx = (int*)malloc(sizeof(int)*numRows);
-    for(i=0; i<numRows; i++){
-        rows[i] = (char*)malloc(sizeof(char)*eachLength);
-        idx[i]=0;
-    }
-
-    //store the original string into a zigzag pattern (in #numRows string)
-    index=0;
-    while(1){
-        for(i=0; i<numRows&&index<length; i++)  //downward
-            rows[i][idx[i]++] = s[index++];
-        if(index>=length)
-            break;
-        
-        for(i=numRows-2; i>0&&index<length; i--)    //upward, work when numRows>=3
-            rows[i][idx[i]++] = s[index++];
-        if(index>=length)
-            break;
-    }
-
-    //s = rows[0]+rows[1]+...+rows[numRows-1] is the output
+int lengthOfLongestSubstring(char * s){
+    int i, index, ans, look_up, left_bound;
+    int appeared_table[95];
+    char *p;
+    
+    for(i=0;i<95;i++)   //use ascii code (subtract 32) as the index of the table
+        appeared_table[i] = -1;
+    ans = 0;
+    left_bound = -1;     //is used to mark the last repeated position
     index = 0;
-    for(i=0; i<numRows; i++){
-        for(j=0; j<idx[i]; j++)
-            s[index++] = rows[i][j];
+    for(p=s; *p; p++){
+        look_up = (*p)-32;      // 32 == ' '
+        if(appeared_table[look_up] == -1)
+            i = index - left_bound;
+        else{
+            i = index - maxx(left_bound, appeared_table[look_up]);
+            left_bound = appeared_table[look_up];
+        }
+        if(i>ans)   //if a longer substring is found
+            ans = i;
+        appeared_table[look_up] = index++;  //update the table
     }
-    for(i=0;i<numRows;i++)
-        free(rows[i]);
-    free(rows);
-    free(idx);
-    return s;
+    return ans;
+}
+
+int maxx(int a, int b){
+    if(a>b)
+        return a;
+    return b;
 }
