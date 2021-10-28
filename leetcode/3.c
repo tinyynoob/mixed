@@ -1,23 +1,9 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
 
-int lengthOfLongestSubstring(char*);
 int maxx(int, int);
-
-int main()
-{
-    char s[1000];
-    strcpy(s,"aabaab!bb");
-    printf("%s\n",s);
-    printf("%d\n",lengthOfLongestSubstring(s));
-    system("pause");
-    return 0;
-}
 
 int lengthOfLongestSubstring(char * s){
     int i, index, ans, look_up, left_bound;
-    unsigned short appeared_table[95];      //failed
+    int appeared_table[95];
     char *p;
     
     for(i=0;i<95;i++)   //use ascii code (subtract 32) as the index of the table
@@ -31,11 +17,11 @@ int lengthOfLongestSubstring(char * s){
             i = index - left_bound;
         else{
             i = index - maxx(left_bound, appeared_table[look_up]);
-            if(appeared_table[look_up] > left_bound)
+            if(appeared_table[look_up] > left_bound)    //update left_bound
                 left_bound = appeared_table[look_up];
         }
 
-        if(i>ans)   //if a longer substring is found
+        if(i>ans)   //if a longer substring is found, update ans
             ans = i;
         appeared_table[look_up] = index++;  //update the table
     }
