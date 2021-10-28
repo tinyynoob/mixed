@@ -1,23 +1,10 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
 
-char * intToRoman(int num);
-
-int main()
-{
-    int n = 88;
-    printf("%s\n",intToRoman(n));
-    system("pause");
-    return 0;
-}
 
 char * intToRoman(int num){
     char l, digit, i, index;
-    char ans[17];
+    char ans[16];
     char *s;
-    
-    memset(ans,17,'\0');
+
     index = 0;
     //1000+
     digit = num/1000;
@@ -77,6 +64,7 @@ char * intToRoman(int num){
         for(i=0; i<digit; i++)
             ans[index++] = 'I';
     }
+    ans[index] = '\0';
     l = strlen(ans)+1;
     s = (char*)malloc(sizeof(char)*l);
     for(i=0; i<l; i++)
