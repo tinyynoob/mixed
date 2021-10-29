@@ -1,7 +1,7 @@
 
 
 char * intToRoman(int num){
-    char l, digit, i, index;
+    int length_of_ans, digit, i, index;
     char ans[16];
     char *s;
 
@@ -65,9 +65,9 @@ char * intToRoman(int num){
             ans[index++] = 'I';
     }
     ans[index] = '\0';
-    l = strlen(ans)+1;
-    s = (char*)malloc(sizeof(char)*l);
-    for(i=0; i<l; i++)
+    length_of_ans = strlen(ans)+1;
+    s = (char*)malloc(sizeof(char)*length_of_ans);
+    for(i=0; i<length_of_ans; i++)
         s[i] = ans[i];
     return s;
 }

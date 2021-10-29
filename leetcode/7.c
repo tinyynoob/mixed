@@ -1,8 +1,8 @@
 
 
 int reverse(int x){
-    int n;
-    char *arr, sign=0, i, digitNum;     //use char type to save memory
+    int i, n, digitNum, sign=0;
+    char *arr;     //use char type to save memory
     if(x==-2147483648)  //which is a very special case, so I treat it independently
         return 0;
     else if(x<0){
