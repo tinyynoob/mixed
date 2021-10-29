@@ -3,9 +3,9 @@
 
 int main()
 {
-    
-    printf("%d\n", '\0');
-    printf("%d\n",(short)'a'-32);
+    char a = 30;
+    printf("%d\n", 30/10);
+    printf("%d\n", min(1,2));
     system("pause");
     return 0;
 }

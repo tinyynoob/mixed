@@ -1,9 +1,14 @@
 MP_algo/Debug
 quick_sort/Debug
 .vs
+
+
+#SIC
 !SIC/*.asm
 *.int
 *.lst
+SIC/DEV05
+SIC/SICSIM-LOG
 
 
 # Prerequisites

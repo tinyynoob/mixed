@@ -2,48 +2,55 @@
 #include<stdlib.h>
 #include<string.h>
 
-int lengthOfLongestSubstring(char*);
-int maxx(int, int);
+char * longestCommonPrefix(char ** strs, int strsSize);
 
 int main()
 {
-    char s[1000];
-    strcpy(s,"aabaab!bb");
-    printf("%s\n",s);
-    printf("%d\n",lengthOfLongestSubstring(s));
+    int i;
+    char **s;
+    s = (char**)malloc(sizeof(char*)*3);
+    for(i=0; i<3; i++)
+        s[i] = (char*)malloc(sizeof(char)*8);
+    strcpy(s[0],"flower");
+    strcpy(s[1],"flow");
+    strcpy(s[2],"flight");
+    printf("%s\n",longestCommonPrefix(s,3));
     system("pause");
     return 0;
 }
 
-int lengthOfLongestSubstring(char * s){
-    int i, index, ans, look_up, left_bound;
-    unsigned short appeared_table[95];      //failed
-    char *p;
-    
-    for(i=0;i<95;i++)   //use ascii code (subtract 32) as the index of the table
-        appeared_table[i] = -1;
-    ans = 0;
-    left_bound = -1;     //is used to mark the last repeated position
-    index = 0;
-    for(p=s; *p; p++){
-        look_up = (*p)-32;      // 32 == ' '
-        if(appeared_table[look_up] == -1)
-            i = index - left_bound;
-        else{
-            i = index - maxx(left_bound, appeared_table[look_up]);
-            if(appeared_table[look_up] > left_bound)
-                left_bound = appeared_table[look_up];
-        }
+char * longestCommonPrefix(char ** strs, int strsSize){
+    int i, j, n, flag;
+    char *ans;
 
-        if(i>ans)   //if a longer substring is found
-            ans = i;
-        appeared_table[look_up] = index++;  //update the table
+    if(strsSize==1){
+        ans = (char*)malloc(sizeof(char)*(strlen(strs[0])+1));
+        strcpy(ans,strs[0]);
+        return ans;
     }
+    
+    i = 0;
+    n = -1;
+    flag = 0;
+    while(1){
+        for(j=0; j<strsSize&&!flag; j++){
+            if(!strs[i][j]){
+                flag = 1;
+                break;
+            }
+            else if(strs[i][j]!=strs[i][0])    //not common char
+                flag = 1;
+        }
+        if(flag)
+            break;
+        n = i++;
+    }
+    //n is now denoted the last index that keeps prefix common
+    
+    ans = (char*)malloc(sizeof(char)*(n+2));
+    ans[n+1] = '\0';
+    ans[n] = 'A';
+    for(i=0; i<=n; i++)
+        ans[i] = strs[0][i];
     return ans;
-}
-
-int maxx(int a, int b){
-    if(a>b)
-        return a;
-    return b;
 }
