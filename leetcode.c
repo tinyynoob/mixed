@@ -2,84 +2,55 @@
 #include<stdlib.h>
 #include<string.h>
 
-char * intToRoman(int num);
+char * longestCommonPrefix(char ** strs, int strsSize);
 
 int main()
 {
-    int n = 88;
-    printf("%s\n",intToRoman(n));
+    int i;
+    char **s;
+    s = (char**)malloc(sizeof(char*)*3);
+    for(i=0; i<3; i++)
+        s[i] = (char*)malloc(sizeof(char)*8);
+    strcpy(s[0],"flower");
+    strcpy(s[1],"flow");
+    strcpy(s[2],"flight");
+    printf("%s\n",longestCommonPrefix(s,3));
     system("pause");
     return 0;
 }
 
-char * intToRoman(int num){
-    char l, digit, i, index;
-    char ans[17];
-    char *s;
+char * longestCommonPrefix(char ** strs, int strsSize){
+    int i, j, n, flag;
+    char *ans;
+
+    if(strsSize==1){
+        ans = (char*)malloc(sizeof(char)*(strlen(strs[0])+1));
+        strcpy(ans,strs[0]);
+        return ans;
+    }
     
-    memset(ans,17,'\0');
-    index = 0;
-    //1000+
-    digit = num/1000;
-    for(i=0; i<digit; i++)
-        ans[index++] = 'M';
-    num = num%1000;
-    //1~999
-    digit = num/100;
-    if(digit%5 == 4){
-        ans[index++] = 'C';
-        if(digit/5)
-            ans[index++] = 'M';
-        else
-            ans[index++] = 'D';
-    }
-    else{
-        if(digit>=5){
-            ans[index++] = 'D';
-            digit-= 5;
+    i = 0;
+    n = -1;
+    flag = 0;
+    while(1){
+        for(j=0; j<strsSize&&!flag; j++){
+            if(!strs[i][j]){
+                flag = 1;
+                break;
+            }
+            else if(strs[i][j]!=strs[i][0])    //not common char
+                flag = 1;
         }
-        for(i=0; i<digit; i++)
-            ans[index++] = 'C';
+        if(flag)
+            break;
+        n = i++;
     }
-    num = num%100;
-    //1~99
-    digit = num/10;
-    if(digit%5 == 4){
-        ans[index++] = 'X';
-        if(digit/5)
-            ans[index++] = 'C';
-        else
-            ans[index++] = 'L';
-    }
-    else{
-        if(digit>=5){
-            ans[index++] = 'L';
-            digit-= 5;
-        }
-        for(i=0; i<digit; i++)
-            ans[index++] = 'X';
-    }
-    num = num%10;
-    //1~9
-    digit = num;
-    if(digit%5 == 4){
-        ans[index++] = 'I';
-        if(digit/5)
-            ans[index++] = 'X';
-        else
-            ans[index++] = 'V';
-    }
-    else{
-        if(digit>=5){
-            ans[index++] = 'V';
-            digit-= 5;
-        }
-        for(i=0; i<digit; i++)
-            ans[index++] = 'I';
-    }
-    l = strlen(ans)+1;
-    s = (char*)malloc(sizeof(char)*l);
-    for(i=0; i<l; i++)
-        s[i] = ans[i];
-    return s;
+    //n is now denoted the last index that keeps prefix common
+    
+    ans = (char*)malloc(sizeof(char)*(n+2));
+    ans[n+1] = '\0';
+    ans[n] = 'A';
+    for(i=0; i<=n; i++)
+        ans[i] = strs[0][i];
+    return ans;
 }
