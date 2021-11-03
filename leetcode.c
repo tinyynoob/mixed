@@ -15,7 +15,7 @@ void clean(struct stack* head);
 
 int main()
 {
-    char s[10]="()";
+    char s[10]="(";
     printf("%d\n",isValid(s));
     system("pause");
     return 0;
@@ -24,6 +24,7 @@ int main()
 int isValid(char * s){
     struct stack *head;
     char *it;
+    char temp;
     head = NULL;
     
     for(it=s; *it; it++){
@@ -31,11 +32,14 @@ int isValid(char * s){
             push(&head,*it);
         else if(!head) //if there is nothing to pop
             return 0;
-        else if( pop(&head)=='('&&*it==')' || pop(&head)=='['&&*it==']' || pop(&head)=='{'&&*it=='}' )
-            ;
         else{
-            clean(head);
-            return 0;
+            temp = pop(&head);
+            if( temp=='('&&*it==')' || temp=='['&&*it==']' || temp=='{'&&*it=='}' )
+                ;
+            else{   //not matched parentheses
+                clean(head);
+                return 0;
+            }
         }
     }
     //if(!head)   //if empty, return True
