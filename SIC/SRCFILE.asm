@@ -19,7 +19,37 @@
 .0       1         2         3         4         5         6         7
 .23456789012345678901234567890123456789012345678901234567890123456789012
 .
-HELLO    START   1000              Hello, World! Program
+GCD      START   1000              Program
+         LDX     ZERO
+         LDA     ALPHA                              
+         COMP	 BETA          
+         JLT     EXC
+         LDA     ONE
+         STA     ANS
+LOOP         
+
+SUBLOO
+
+EXC      STA     TEMP
+         LDA     BETA
+         STA     ALPHA     
+         LDA     TEMP
+         STA     BETA
+         
+
+EUCLID
+
+ZERO     WORD    0                 Constant: 0
+ONE      WORD    1
+ALPHA    RESW    1
+BETA     RESW    1
+TEMP     RESW    1
+ANS      RESW    1
+         END     GCD
+
+
+
+
 PSTART   LDX     ZERO              Initialize index register
 PUTCH    TD      OUTDEV            Output Device ready?
          JEQ     PUTCH
@@ -28,8 +58,10 @@ PUTCH    TD      OUTDEV            Output Device ready?
          TIX     MSIZE             End of Message reached?
          JLT     PUTCH             Loop
          RSUB                      Program Return/Exit
+
 .
-ZERO     WORD    0                 Constant: 0
+
+
 MSIZE    WORD    15                Size of the message
 MSG      BYTE    C'Hello, world!'
          BYTE    X'0D0A'
