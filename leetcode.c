@@ -8,12 +8,13 @@ int strStr(char * haystack, char * needle);
 int main()
 {
     char s1[25], s2[25];
-    strcpy(s1,"aabaaabaab");
-    strcpy(s2,"aabaab");
+    strcpy(s1,"hello");
+    strcpy(s2,"ll");
     printf("%d\n",strStr(s1, s2));
     system("pause");
     return 0;
 }
+
 
 
 int strStr(char * haystack, char * needle){
@@ -40,7 +41,7 @@ int strStr(char * haystack, char * needle){
         if(needle[index]){  //if !='\0' //for unmatched after continuous matching
             KMPtable[index] = subindex;
             while(subindex>0){
-                if(needle[index]==needle[KMPtable[subindex]])   //backward search
+                if(needle[index]==needle[KMPtable[subindex]])   //backward compare
                     break;
                 subindex = KMPtable[subindex];
             }
@@ -48,13 +49,19 @@ int strStr(char * haystack, char * needle){
         }   
     }
     /*end----construct KMP table-------*/
+    
     ans = -1;
     index = 0;
     subindex = 0;
     while(haystack[index]&&ans==-1){
         if(haystack[index]!=needle[subindex]){    //if not matched,
-            subindex = 0;
+            while(subindex>0){
+                if(haystack[index]==needle[subindex])
+                    break;
+                subindex = KMPtable[subindex];
+            }
             index++;
+            subindex++;
             continue;
         }
         while(haystack[index]==needle[subindex]){
@@ -65,10 +72,9 @@ int strStr(char * haystack, char * needle){
             index++;
             subindex++;
         }
-        if(needle[subindex])
-            subindex = KMPtable[subindex];
     }
     free(KMPtable);
     return ans;
 }
+
 
