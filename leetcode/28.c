@@ -1,7 +1,7 @@
 
 
 int strStr(char * haystack, char * needle){
-    int ans, index, subindex, needle_length;
+    int ans, index, subindex, needle_length, backward_search;
     int *KMPtable;
     needle_length = 0;
     for(index=0; needle[index]; index++)
@@ -12,29 +12,37 @@ int strStr(char * haystack, char * needle){
     KMPtable = (int*)malloc(sizeof(int)*needle_length);
     KMPtable[0] = -1;
     index = 1;
+    subindex = 0;
     while(needle[index]){
-        subindex = 0;
-        if(needle[index]!=needle[subindex]){    //if not matched, set table to 0 and go next
-            KMPtable[index++] = 0;
+        if(needle[index]!=needle[subindex]){    //if not matched, 
+            KMPtable[index++] = subindex;
+            subindex = 0;
             continue;
         }
         while(needle[index]==needle[subindex])  //if matched, loop until not matched
             KMPtable[index++] = subindex++;
-        if(needle[index])
-            KMPtable[index++] = subindex;
+        if(needle[index]){  //if !='\0' //for unmatched after continuous matching
+            KMPtable[index] = subindex;
+            while(subindex>0){
+                if(needle[index]==needle[KMPtable[subindex]])   //backward search
+                    break;
+                subindex = KMPtable[subindex];
+            }
+            index++;
+        }   
     }
     /*end----construct KMP table-------*/
     ans = -1;
     index = 0;
     subindex = 0;
     while(haystack[index]&&ans==-1){
-        if(haystack[index]!=needle[subindex]){    //if not matched, reset subindex and go next
+        if(haystack[index]!=needle[subindex]){    //if not matched,
             subindex = 0;
             index++;
             continue;
         }
         while(haystack[index]==needle[subindex]){
-            if(subindex==needle_length-1){    //found
+            if(subindex==needle_length-1){    //found answer
                 ans = index-subindex;
                 break;
             }

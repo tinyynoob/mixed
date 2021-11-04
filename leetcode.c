@@ -2,67 +2,73 @@
 #include<stdlib.h>
 #include<string.h>
 
-struct stack{
-    char ch;
-    struct stack* next;
-};
 
-int isValid(char * s);
-void push(struct stack** head, char in);
-char pop(struct stack** head);
-void clean(struct stack* head);
-
+int strStr(char * haystack, char * needle);
 
 int main()
 {
-    char s[10]="(";
-    printf("%d\n",isValid(s));
+    char s1[25], s2[25];
+    strcpy(s1,"aabaaabaab");
+    strcpy(s2,"aabaab");
+    printf("%d\n",strStr(s1, s2));
     system("pause");
     return 0;
 }
 
-int isValid(char * s){
-    struct stack *head;
-    char *it;
-    char temp;
-    head = NULL;
-    
-    for(it=s; *it; it++){
-        if( *it=='(' || *it=='[' || *it=='{' )
-            push(&head,*it);
-        else if(!head) //if there is nothing to pop
-            return 0;
-        else{
-            temp = pop(&head);
-            if( temp=='('&&*it==')' || temp=='['&&*it==']' || temp=='{'&&*it=='}' )
-                ;
-            else{   //not matched parentheses
-                clean(head);
-                return 0;
-            }
+
+int strStr(char * haystack, char * needle){
+    int ans, index, subindex, needle_length, backward_search;
+    int *KMPtable;
+    needle_length = 0;
+    for(index=0; needle[index]; index++)
+        needle_length++;
+    if(needle_length==0)
+        return 0;
+    /*-------construct KMP table-------*/
+    KMPtable = (int*)malloc(sizeof(int)*needle_length);
+    KMPtable[0] = -1;
+    index = 1;
+    subindex = 0;
+    while(needle[index]){
+        if(needle[index]!=needle[subindex]){    //if not matched, 
+            KMPtable[index++] = subindex;
+            subindex = 0;
+            continue;
         }
+        while(needle[index]==needle[subindex])  //if matched, loop until not matched
+            KMPtable[index++] = subindex++;
+        if(needle[index]){  //if !='\0' //for unmatched after continuous matching
+            KMPtable[index] = subindex;
+            while(subindex>0){
+                if(needle[index]==needle[KMPtable[subindex]])   //backward search
+                    break;
+                subindex = KMPtable[subindex];
+            }
+            index++;
+        }   
     }
-    //if(!head)   //if empty, return True
-        return 1;
+    /*end----construct KMP table-------*/
+    ans = -1;
+    index = 0;
+    subindex = 0;
+    while(haystack[index]&&ans==-1){
+        if(haystack[index]!=needle[subindex]){    //if not matched,
+            subindex = 0;
+            index++;
+            continue;
+        }
+        while(haystack[index]==needle[subindex]){
+            if(subindex==needle_length-1){    //found answer
+                ans = index-subindex;
+                break;
+            }
+            index++;
+            subindex++;
+        }
+        if(needle[subindex])
+            subindex = KMPtable[subindex];
+    }
+    free(KMPtable);
+    return ans;
 }
 
-void push(struct stack** head, char in){
-    struct stack *newNode;
-    newNode = (struct stack*)malloc(sizeof(struct stack));
-    newNode->ch = in;
-    newNode->next = *head;
-    *head = newNode;
-}
-char pop(struct stack** head){
-    struct stack *p;
-    char out;
-    out = (*head)->ch;
-    p = (*head)->next;
-    free(*head);
-    *head = p;
-    return out;
-}
-void clean(struct stack* head){
-    while(head)
-        pop(&head);
-}
