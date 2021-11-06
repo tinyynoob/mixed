@@ -1,3 +1,0 @@
-﻿D:\VisualStudio\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(513,5): warning MSB8028: 中繼目錄 (Debug\) 包含從其他專案 (KMP_algo.vcxproj) 共用的檔案。這可能導致錯誤的清除和重建行為。
-  source.cpp
-  MP_algo.vcxproj -> D:\code\MP_algo\Debug\MP_algo.exe
