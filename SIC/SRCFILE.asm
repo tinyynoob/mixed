@@ -20,34 +20,47 @@
 .23456789012345678901234567890123456789012345678901234567890123456789012
 .
 GCD      START   1000              Program
-         LDX     ZERO
-         LDA     ALPHA                              
-         COMP	 BETA          
-         JLT     EXC
-         LDA     ONE
-         STA     ANS
-LOOP         
+RLOOP    TD      INDEV
+         JEQ     RLOOP
+         RD      INDEV
 
-SUBLOO
+         J       LOOP              ANSWER RETURNS IN BETA
+WLOOP    TD      OUTDEV
+         JEQ     WLOOP
 
-EXC      STA     TEMP
+LOOP     LDA     ALPHA                
+         COMP	 BETA              
+         JLT     SWAP              SWAP TO KEEP ALPHA>=BETA
+         LDA     ALPHA
+         DIV     BETA              (A)=ALPHA/BETA
+         MUL     BETA              (A)=(A)*BETA
+         STA     TEMP  		   COMPUTE REMAINDER BY ALPHA-(A)
+         LDA     ALPHA
+         SUB     TEMP
+         COMP    ZERO      	   IF REMAINDER IS ZERO, THE ANSWER IS BETA
+         JEQ     WLOOP
+         STA     ALPHA
+         J       LOOP
+
+SWAP     STA     TEMP
          LDA     BETA
          STA     ALPHA     
          LDA     TEMP
          STA     BETA
-         
+         RSUB
 
-EUCLID
 
 ZERO     WORD    0                 Constant: 0
-ONE      WORD    1
+ONE      WORD    1                 Constant: 1
 ALPHA    RESW    1
 BETA     RESW    1
 TEMP     RESW    1
-ANS      RESW    1
+INDEV    BYTE    X'03'
+OUTDEV   BYTE    X'05'
+CHAR     RESB    1
          END     GCD
 
-
+--------------------------------------------------------
 
 
 PSTART   LDX     ZERO              Initialize index register
