@@ -20,51 +20,99 @@
 .23456789012345678901234567890123456789012345678901234567890123456789012
 .
 GCD      START   1000              Program
-         LDX     ZERO
-         LDA     ALPHA                              
-         COMP	 BETA          
-         JLT     EXC
-         LDA     ONE
-         STA     ANS
-LOOP         
-
-SUBLOO
-
-EXC      STA     TEMP
+         LDA     ZERO              RESET ALL
+	 LDX	 ZERO
+         STA     ALPHA
+         STA     BETA
+         STA     TEMP
+         STCH    DATA
+READ	 JSUB    RLOOP		   
+	 LDA     ALPHA		   IF NO DATA IN ALPHA, STORE TO ALPHA
+	 COMP    ZERO
+	 LDA 	 TEMP
+	 JEQ	 SETALP
+	 STA	 BETA		   OTHERWISE, STORE TO BETA
+	 J	 EUCLID
+RLOOP    TD      INDEV		   READ CHAR DATA AND TRANS TO INT
+         JEQ     RLOOP
+	 LDA	 ZERO
+         RD      INDEV
+	 STCH    CHAR
+         COMP    SPACE
+         JEQ     CCR		   IF THE NUMBER ENDS
+	 LDA     TEMP		   TEMP=TEMP*10
+	 MUL     TEN
+	 STA     TEMP
+	 LDA     ZERO
+	 LDCH	 CHAR
+	 SUB	 FOUEIG		   TRANS ASCII NUMBER SYMBOL TO NUMBER
+	 ADD	 TEMP		   TEMP=TEMP+CURRENT DIGIT
+         J       RLOOP
+SETALP	 STA 	 ALPHA
+	 J	 READ
+EUCLID   LDA     ALPHA             EUCLIDEAN ALGORITHM
+         COMP	 BETA              
+         JSUB    CCSWAP            SWAP TO KEEP ALPHA>=BETA
+         LDA     ALPHA
+         DIV     BETA              (A)=ALPHA/BETA
+         MUL     BETA              (A)=(A)*BETA
+         STA     TEMP  		   COMPUTE REMAINDER BY ALPHA-(A)
+         LDA     ALPHA
+         SUB     TEMP
+         COMP    ZERO      	   IF REMAINDER IS ZERO, EXIT EUCLID
+         JEQ     CALENG
+         STA     ALPHA		   OTHERWISE, UPDATE ALPHA AND LOOP
+         J       EUCLID
+CALENG	 LDA     BETA		   CALCULATE LENGTH
+	 LDX	 ZERO
+CLLOOP	 DIV	 TEN
+	 TIX	 ZERO		   (X)++, NOT USING COMP OF X
+	 COMP	 ZERO		   COMPARE (A) WITH 0
+	 JEQ	 WLOOP		   EXIT CALENG IF TRUE
+	 J	 CLLOOP
+PREWRI	 STX	 TEMP		   PREPARE BEFORE WRITING
+	 LDX	 ZERO
+	 LDA	 ONE		   ALPHA=1
+	 STA	 ALPHA		   ALPHA WILL BE USED AS DIVISOR
+PWLOOP	 TIX	 TEMP
+	 JEQ	 WLOOP
+	 MUL	 TEN		   (A)=(A)*10
+	 J	 PWLOOP
+WLOOP    TD      OUTDEV		   OUTPUT THE ANSWER STORED IN BETA
+         JEQ     WLOOP
+	 LDA     BETA		   GET THE LEADER DIGIT OF BETA
+	 DIV 	 ALPHA
+	 STA	 TEMP
+	 ADD	 FOREIG		   TRANS NUMBER TO ASCII SYMBOL
+	 WD	 OUTDEV
+	 LDA	 BETA		   REMOVE LEADER DIGIT OF BETA
+	 SUB 	 TEMP
+	 STA	 BETA
+	 LDA	 ALPHA		   ALPHA=ALPHA/10
+	 DIV	 TEN
+	 COMP	 ZERO
+	 JEQ	 CCR	 	   EXIT GCD
+	 STA	 ALPHA
+	 J 	 WLOOP
+CCSWAP	 JLT	 SWAP		   IF ALPHA<BETA, SWAP
+	 RSUB			   OTHERWISE, GO BACK
+SWAP     STA     TEMP
          LDA     BETA
          STA     ALPHA     
          LDA     TEMP
          STA     BETA
-         
-
-EUCLID
+         RSUB
+CCR 	 RSUB			   CONDITIONAL RETURN
 
 ZERO     WORD    0                 Constant: 0
-ONE      WORD    1
+ONE      WORD    1                 Constant: 1
+TEN      WORD	 10
+SPACE    WORD	 32
+FOUEIG   WORD    48
 ALPHA    RESW    1
 BETA     RESW    1
 TEMP     RESW    1
-ANS      RESW    1
-         END     GCD
-
-
-
-
-PSTART   LDX     ZERO              Initialize index register
-PUTCH    TD      OUTDEV            Output Device ready?
-         JEQ     PUTCH
-         LDCH    MSG,X             Load via index the next char
-         WD      OUTDEV            Output/Display the character
-         TIX     MSIZE             End of Message reached?
-         JLT     PUTCH             Loop
-         RSUB                      Program Return/Exit
-
-.
-
-
-MSIZE    WORD    15                Size of the message
-MSG      BYTE    C'Hello, world!'
-         BYTE    X'0D0A'
+INDEV    BYTE    X'03'
 OUTDEV   BYTE    X'05'
-.
-         END     PSTART
+CHAR     RESB    1
+         END     GCD
