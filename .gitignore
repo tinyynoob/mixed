@@ -4,7 +4,6 @@
 !SIC/*.asm
 *.int
 *.lst
-SIC/DEV05
 SIC/SICSIM-LOG
 
 
