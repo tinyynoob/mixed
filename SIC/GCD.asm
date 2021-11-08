@@ -1,10 +1,5 @@
-.
-.  File; SP-HELLO.ASM
-.  Date: (A) Creation - 2021/10/04     (B) Modified - 2021/10/05
 .  Notes:
-.  (1) This program is an example program of course System Programming
-.  (2) This file is intended to be an example program for SIC Assembler
-.  (3) The fixed format of each line:
+.      The fixed format of each line:
 .          COL. 1       - . (the entire line is comment)
 .          COL. 1 ~ 8   - Label (optional)
 .          COL. 9       - Blank
@@ -13,14 +8,25 @@
 .          COL. 18 ~ 35 - Operand(s)
 .          COL. 36 ~ 66 - Comment (optional)
 .  Usage:
-.  (A) Rename this file to SRCFILE
-.  (B) Execute SIC assembler
+.  (A) Rename this file to SRCFILE.asm
+.  (B) Put the two numbers A and B in devf3.  Format: A(space)B(space) 
+.  (C) Execute SIC assembler
+.  (D) Rename SRCFILE.obj to devf2
+.  (E) Execute SIC simulator
+.  (F) The result will show in DEV05
 .
 .0       1         2         3         4         5         6         7
 .23456789012345678901234567890123456789012345678901234567890123456789012
 .
 GCD      START   1000              Program
          STL     RETADR            STORE RETURN ADDRESS
+         LDX     ZERO
+WRISTR   TD      OUTDEV            WRITE STRING 'GCD('
+         JEQ     WRISTR
+         LDCH    STRING,X
+         WD      OUTDEV
+         TIX     STRLEN
+         JLT     WRISTR
          LDA     ZERO              RESET VARIABLES
          LDX     ZERO
          STA     ALPHA
@@ -33,14 +39,25 @@ READ     JSUB    RLOOP
          LDA     TEMP
          JEQ     SETALP
          STA     BETA              OTHERWISE, STORE TO BETA
+WLOOP3   TD      OUTDEV            WRITE ')'
+         JEQ     WLOOP3
+         LDCH    CLOPAR
+         WD      OUTDEV
+WLOOP4   TD      OUTDEV            WRITE '='
+         JEQ     WLOOP4
+         LDCH    EQUALS
+         WD      OUTDEV
          J       EUCLID
 RLOOP    TD      INDEV             READ INPUT, AND TRANS FROM CHAR TO INT, AND STORE TO TEMP
          JEQ     RLOOP
          LDA     ZERO
          RD      INDEV             READ INPUT TO CHAR
          STCH    CHAR
-         COMP    SPACE             IF EQUAL TO　ASCII CODE OF SPACE
-         JEQ     CCR               IF THE NUMBER ENDS, EXIT RLOOP
+         COMP    SPACE             IF EQUAL TO ASCII CODE OF SPACE, THE DATA OF NUMBER ENDS
+         JEQ     CCR               EXIT RLOOP
+WLOOP1   TD      OUTDEV            IF NOT SPACE, WRITE IT
+         JEQ     WLOOP1
+         WD      OUTDEV
          LDA     TEMP              TEMP=TEMP*10
          MUL     TEN
          STA     TEMP
@@ -51,6 +68,10 @@ RLOOP    TD      INDEV             READ INPUT, AND TRANS FROM CHAR TO INT, AND S
          STA     TEMP
          J       RLOOP
 SETALP   STA     ALPHA             STORE (A) TO ALPHA
+WLOOP2   TD      OUTDEV            WRITE ','
+         JEQ     WLOOP2
+         LDCH    COMMA
+         WD      OUTDEV
          LDA     ZERO              RESET TEMP
          STA     TEMP              
          J       READ
@@ -67,6 +88,14 @@ EUCLID   LDA     ALPHA             EUCLIDEAN ALGORITHM
          JEQ     CALENG
          STA     ALPHA             OTHERWISE, UPDATE ALPHA AND LOOP
          J       EUCLID
+CCSWAP   JLT     SWAP              IF ALPHA<BETA, SWAP
+         RSUB                      OTHERWISE, DO NOTHING AND GO BACK
+SWAP     STA     TEMP              SWAP ALPHA AND BETA
+         LDA     BETA
+         STA     ALPHA     
+         LDA     TEMP
+         STA     BETA
+         RSUB
 CALENG   LDA     BETA              CALCULATE LENGTH OF BETA
          LDX     ZERO
 CLLOOP   DIV     TEN
@@ -79,11 +108,11 @@ PREWRI   STX     TEMP              PREPARE BEFORE WRITING
          LDA     ONE               ALPHA=1
 PWLOOP   STA     ALPHA             ALPHA WILL BE USED AS DIVISOR
          TIX     TEMP
-         JEQ     WLOOP
+         JEQ     WRIANS
          MUL     TEN               (A)=(A)*10
          J       PWLOOP
-WLOOP    TD      OUTDEV            OUTPUT THE ANSWER STORED IN BETA
-         JEQ     WLOOP
+WRIANS   TD      OUTDEV            WRITE ANSWER TO OUTDEV
+         JEQ     WRIANS
          LDA     BETA              GET THE LEADER DIGIT OF BETA
          DIV     ALPHA
          STA     TEMP              STORE THE DIGIT TO TEMP
@@ -100,27 +129,24 @@ WLOOP    TD      OUTDEV            OUTPUT THE ANSWER STORED IN BETA
          COMP    ZERO
          JEQ     EXIT              EXIT GCD
          STA     ALPHA
-         J       WLOOP
-CCSWAP   JLT     SWAP              IF ALPHA<BETA, SWAP
-         RSUB                      OTHERWISE, DO NOTHING AND GO BACK
-SWAP     STA     TEMP
-         LDA     BETA
-         STA     ALPHA     
-         LDA     TEMP
-         STA     BETA
-         RSUB
+         J       WRIANS
 CCR      RSUB                      CONDITIONAL RETURN
 EXIT     LDL     RETADR            EXIT GCD
          RSUB
 ZERO     WORD    0                 Constant: 0
 ONE      WORD    1                 Constant: 1
 TEN      WORD    10
-SPACE    WORD    32
-FOUEIG   WORD    48
+STRLEN   WORD    4                 STRING LENGTH
+SPACE    WORD    32                ASCII CODE OF SPACE
+FOUEIG   WORD    48                ASCII CODE OF '0'
 ALPHA    RESW    1
 BETA     RESW    1
 TEMP     RESW    1
 RETADR   RESW    1
+STRING   BYTE    C'GCD('
+CLOPAR   BYTE    C')'
+COMMA    BYTE    C','
+EQUALS   BYTE    C'='
 INDEV    BYTE    X'F3'
 OUTDEV   BYTE    X'05'
 CHAR     RESB    1
