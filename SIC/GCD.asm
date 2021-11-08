@@ -20,7 +20,8 @@
 .23456789012345678901234567890123456789012345678901234567890123456789012
 .
 GCD      START   1000              Program
-         LDA     ZERO              RESET ALL
+         STL     RETADR            STORE RETURN ADDRESS
+         LDA     ZERO              RESET VARIABLES
          LDX     ZERO
          STA     ALPHA
          STA     BETA
@@ -33,7 +34,7 @@ READ     JSUB    RLOOP
          JEQ     SETALP
          STA     BETA              OTHERWISE, STORE TO BETA
          J       EUCLID
-RLOOP    TD      INDEV             READ INPUT, TRANS FROM CHAR TO INT, AND STORE TO TEMP
+RLOOP    TD      INDEV             READ INPUT, AND TRANS FROM CHAR TO INT, AND STORE TO TEMP
          JEQ     RLOOP
          LDA     ZERO
          RD      INDEV             READ INPUT TO CHAR
@@ -71,7 +72,7 @@ CALENG   LDA     BETA              CALCULATE LENGTH OF BETA
 CLLOOP   DIV     TEN
          TIX     ZERO              (X)++, NOT USING COMP OF X
          COMP    ZERO              COMPARE (A) WITH 0
-         JEQ     WLOOP             EXIT CALENG IF TRUE
+         JEQ     PREWRI            EXIT CALENG IF TRUE
          J       CLLOOP
 PREWRI   STX     TEMP              PREPARE BEFORE WRITING
          LDX     ZERO
@@ -97,7 +98,7 @@ WLOOP    TD      OUTDEV            OUTPUT THE ANSWER STORED IN BETA
          LDA     ALPHA             ALPHA=ALPHA/10
          DIV     TEN
          COMP    ZERO
-         JEQ     CCR               EXIT GCD
+         JEQ     EXIT              EXIT GCD
          STA     ALPHA
          J       WLOOP
 CCSWAP   JLT     SWAP              IF ALPHA<BETA, SWAP
@@ -109,6 +110,8 @@ SWAP     STA     TEMP
          STA     BETA
          RSUB
 CCR      RSUB                      CONDITIONAL RETURN
+EXIT     LDL     RETADR            EXIT GCD
+         RSUB
 ZERO     WORD    0                 Constant: 0
 ONE      WORD    1                 Constant: 1
 TEN      WORD    10
@@ -117,6 +120,7 @@ FOUEIG   WORD    48
 ALPHA    RESW    1
 BETA     RESW    1
 TEMP     RESW    1
+RETADR   RESW    1
 INDEV    BYTE    X'F3'
 OUTDEV   BYTE    X'05'
 CHAR     RESB    1
