@@ -5,6 +5,7 @@
 *.int
 *.lst
 SIC/SICSIM-LOG
+SIC/NULL
 
 
 # Prerequisites
