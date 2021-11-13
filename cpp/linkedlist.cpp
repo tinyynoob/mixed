@@ -74,5 +74,6 @@ list <int> reverse_list(list <int> oriList){
     list <int>::iterator it;
     for(it=oriList.begin(); it!=oriList.end(); it++)
         tempList.push_front(*it);
+    oriList.erase(oriList.begin(), oriList.end());
     return tempList;
 }
