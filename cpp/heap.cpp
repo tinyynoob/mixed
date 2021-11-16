@@ -9,23 +9,50 @@ using namespace std;
 class heap  //assume binary min heap
 {
 public:
-    heap(fstream);
-    heap(int []);
+    heap(fstream&);
+    heap(const int[], const int);
+    ~heap();
     int get_root();
     int getHeight();    //notice that single-node tree has height 0
-    void insert(int);
+    void insert(const int);
     int delete_root();  //if no root to delete, return 1; Otherwise, return 0;
+    void printOut();
 private:
     vector <int> nodes;
-    //void reHeapUp();
-    void reHeapDown(int);
+    void HeapifyDown(const int);
 };
 
 int main()
 {
-    
+    heap *myHeap;
+    fstream FILE;
+    FILE.open("heap_input.txt", ios::in);
+    myHeap = new heap(FILE);
+    FILE.close();
+
+    myHeap->printOut();
+    delete myHeap;
     system("pause");
     return 0;
+}
+
+heap::heap(fstream& inFILE) //call by reference
+{
+    int n;
+    while(!inFILE.eof()){
+        inFILE>>n;
+        insert(n);
+    }
+}
+
+heap::heap(const int data[], const int dataSize){
+    int i;
+    for(i=0; i<dataSize; i++)
+        insert(data[i]);
+}
+
+heap::~heap(){
+    nodes.clear();
 }
 
 int heap::get_root()
@@ -41,10 +68,16 @@ int heap::getHeight()
         return (int)log2(nodes.size());
 }
 
-void heap::insert(int input)
-{
+void heap::insert(const int input){
+    int parent, index;
     nodes.push_back(input);
-    //reHeapUp();
+    index = nodes.size()-1;
+    parent = (index-1)/2;
+    while(index && nodes.at(index)<nodes.at(parent)){
+        swap(nodes.at(index), nodes.at(parent));
+        index = parent;
+        parent = (index-1)/2;
+    }
 }
 
 int heap::delete_root()
@@ -53,14 +86,11 @@ int heap::delete_root()
         return 1;
     swap(nodes.at(0), nodes.back());
     nodes.pop_back();
-    reHeapDown(0);
+    HeapifyDown(0);
     return 0;
 }
 
-
-
-
-void heap::reHeapDown(int root)   //root = root index of the subtree
+void heap::HeapifyDown(const int root)   //root = root index of the subtree
 {
     int left, right, key;
     if(root >= nodes.size())
@@ -83,7 +113,14 @@ void heap::reHeapDown(int root)   //root = root index of the subtree
         return;
     else{
         swap(nodes.at(root), nodes.at(key));
-        reHeapDown(key);
+        HeapifyDown(key);
         return;
     }
+}
+
+void heap::printOut(){
+    vector <int>::iterator it;
+    for(it=nodes.begin(); it!=nodes.end(); it++)
+        cout<<*it<<' ';
+    cout<<endl;
 }
