@@ -10,17 +10,19 @@ class heap  //assume binary min heap
 {
 public:
     heap(fstream&);
-    heap(const int[], const int);
+    heap(const int data[], const int dataSize);
     ~heap();
     int get_root();
     int getHeight();    //notice that single-node tree has height 0
     void insert(const int);
-    int delete_root();  //if no root to delete, return 1; Otherwise, return 0;
+    int delete_at_root();  //if no root to delete, return 1; Otherwise, return 0;
     void printOut();
+    void sort();    //after sort(), the data would be arranged as a sorted vector no longer a heap
 private:
     vector <int> nodes;
-    void HeapifyDown(const int);
+    void heapifyDown(const int, const int);
 };
+
 
 int main()
 {
@@ -30,6 +32,8 @@ int main()
     myHeap = new heap(FILE);
     FILE.close();
 
+    myHeap->printOut();
+    myHeap->sort();
     myHeap->printOut();
     delete myHeap;
     system("pause");
@@ -71,6 +75,7 @@ int heap::getHeight()
 void heap::insert(const int input){
     int parent, index;
     nodes.push_back(input);
+    /*-------start heapifyUp-------*/
     index = nodes.size()-1;
     parent = (index-1)/2;
     while(index && nodes.at(index)<nodes.at(parent)){
@@ -80,26 +85,28 @@ void heap::insert(const int input){
     }
 }
 
-int heap::delete_root()
+int heap::delete_at_root()
 {
-    if(getHeight()==-1) //heap is empty, no loop to delete
+    if(nodes.empty()) //heap is empty, no loop to delete
         return 1;
     swap(nodes.at(0), nodes.back());
     nodes.pop_back();
-    HeapifyDown(0);
+    heapifyDown(0, nodes.size());
     return 0;
 }
 
-void heap::HeapifyDown(const int root)   //root = root index of the subtree
+void heap::heapifyDown(const int root, const int length)
+//root = root index of the subtree
+//length is the logical end of the heap. in usual case, it is nodes.size(); in sort(), it works
 {
     int left, right, key;
-    if(root >= nodes.size())
+    if(root >= length)
         return;
     key = -1;
     left = 2*root+1;
     right = 2*root+2;
-    if(left<=nodes.size()){    //if left subtree exists
-        if(right<=nodes.size()){    //if right subtree exists
+    if(left < length){    //if left subtree exists
+        if(right < length){    //if right subtree exists
             if(nodes.at(left)<nodes.at(root) && nodes.at(left)<=nodes.at(right))    //if left is least
                 key = left;
             else if(nodes.at(right)<nodes.at(root) && nodes.at(right)<=nodes.at(left))  //if right is least
@@ -113,7 +120,7 @@ void heap::HeapifyDown(const int root)   //root = root index of the subtree
         return;
     else{
         swap(nodes.at(root), nodes.at(key));
-        HeapifyDown(key);
+        heapifyDown(key, length);
         return;
     }
 }
@@ -123,4 +130,13 @@ void heap::printOut(){
     for(it=nodes.begin(); it!=nodes.end(); it++)
         cout<<*it<<' ';
     cout<<endl;
+}
+
+void heap::sort(){
+    int i;
+    for(i=nodes.size(); i; i--){
+        //cout<<get_root()<<' ';    //this line will print data from lowest to highest
+        swap(nodes.at(0), nodes.at(i-1));
+        heapifyDown(0, i-1);
+    }
 }
