@@ -4,16 +4,16 @@ using namespace std;
 
 class queensPuzzle
 {
-private:
-    int size;   //puzzle size
-    int *queens;    //queens[i]=j means place queen at row i and column j
-    int solutionCounter = 0;
 public:
     queensPuzzle(); //clear queensPuzzle_out.txt
     void setSize(const int);  //set size and renew queens
     void printOut();    //print to queensPuzzle_out.txt
-    int checkValid(const int);  //valid=1, invalid=0
     void placeQueen(const int);
+private:
+    int size;   //puzzle size
+    int *queens;    //queens[i]=j means place queen at row i and column j
+    int solutionCounter = 0;
+    int checkValid(const int);  //valid=1, invalid=0
 };
 
 int main()

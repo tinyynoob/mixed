@@ -4,12 +4,8 @@
 
 int main()
 {
-    char s1[10], s2[5];
     int i;
-    strcpy(s1,"abcdefg");
-    strcpy(s2,"ab");
-    for(i=0; s1[i]==s2[i]; i++)
-        printf("%d\t",i);
+    printf("%d\t",-1/2);
     system("pause");
     return 0;
 }
