@@ -28,7 +28,7 @@ int main()
 {
     heap *myHeap;
     fstream FILE;
-    FILE.open("heap_input.txt", ios::in);
+    FILE.open("int_input.txt", ios::in);
     myHeap = new heap(FILE);
     FILE.close();
 
