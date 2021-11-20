@@ -1,17 +1,8 @@
 
-/*-----use the result of 1 and 912-----*/
-#define INT_MAX 2147483647
+/*-----use the result of 912-----*/
+
 #define swap(a,b,temp) {temp=a; a=b; b=temp;}
 
-struct hashTable{
-    int *table;
-    int size;
-};
-
-void hash_insert(struct hashTable *hash, const int key);
-int hash_function(int key, const int tableSize);
-int hash_search(const struct hashTable *hash, const int key);
-void hash_clear(struct hashTable *hash);
 int* sortArray(int* nums, int numsSize);
 void quicksort(int *nums, const int left, const int right);
 void insertionSort(int *nums, const int left, const int right);
@@ -22,98 +13,54 @@ void insertionSort(int *nums, const int left, const int right);
  * Note: Both returned array and *columnSizes array must be malloced, assume caller calls free().
  */
 int** threeSum(int* nums, int numsSize, int* returnSize, int** returnColumnSizes){
-    struct hashTable *hash;
-    int i, n, mid, right, target;
+    int i, flag, left, index, right, sum, allocSize;
     int **ans;
     
     *returnSize = 0;
-    if(!numsSize)
-        return nums;
+    if(numsSize < 3)
+        return NULL;
     
     nums = sortArray(nums, numsSize);
-    
-    hash = (struct hashTable*)malloc(sizeof(struct hashTable));
-    hash->table = NULL;
-    /*---to ensure tableSize = 2^k, that is, in this binary form 00..0010..00----*/
-    n = numsSize<<1;
-    for(i=0; n; n>>=1)
-        i++;
-    n = 1;
-    for(; i; i--)
-        n<<= 1;
-    hash->size = n;
-    /*----end set tableSize----*/
-    hash->table = (int*)malloc(sizeof(int)*hash->size);
-    
-    ans = (int**)malloc(sizeof(int*)*2000);  //guess a max size
-    *returnColumnSizes = (int*)malloc(sizeof(int)*2000);
-    
-    for(right=numsSize-1; right&&nums[right]>=0; right--){  //if nums[right]<0, then since the other two also <0, they cant form an answer
-        for(i=0; i<hash->size; i++) //reset hash table
-            hash->table[i] = INT_MAX;
-        for(mid=0; mid<right; mid++){
-            target = 0-nums[right]-nums[mid];
-            if(hash_search(hash, target) != -1){  //if found an answer
-                n = 0;
-                for(i=0; i<*returnSize; i++)   //if this triplet is duplicate, skip it
-                    if(target==ans[i][0] && nums[mid]==ans[i][1] && nums[right]==ans[i][2]){
-                        n = 1;
-                        break;
-                    }
-                if(n)
-                    continue;
-                
+
+    flag = 0;
+    allocSize = 256;
+    ans = (int**)malloc(sizeof(int*)*allocSize);
+    *returnColumnSizes = (int*)malloc(sizeof(int)*allocSize);
+    for(index=1; index<numsSize-1; index++){
+        if(index>1 && nums[index]==nums[index-1]){
+            continue;
+        }
+        
+        left = index-1;
+        right = index+1;
+        while(left>=0 && right<numsSize){
+            sum = nums[left]+nums[index]+nums[right];
+            if(sum>0)
+                left--;
+            else if(sum<0)
+                right++;
+            else{   // an answer is found
+                if(*returnSize == allocSize){   //if the allocated space is full
+                    allocSize+= 256;
+                    ans = (int**)realloc(ans, sizeof(int*)*allocSize);
+                    *returnColumnSizes = (int*)realloc(*returnColumnSizes, sizeof(int)*allocSize);
+                }
                 (*returnColumnSizes)[*returnSize] =  3;
                 ans[*returnSize] = (int*)malloc(sizeof(int)*3);
-                ans[*returnSize][0] = target;
-                ans[*returnSize][1] = nums[mid];
+                ans[*returnSize][0] = nums[left];
+                ans[*returnSize][1] = nums[index];
                 ans[*returnSize][2] = nums[right];
                 (*returnSize)++;
+                do{
+                    left--;
+                }while(left>=0 && nums[left]==nums[left+1]);
+                // do{
+                //     right++;
+                // }while(right<numsSize && nums[right]==nums[right-1]);
             }
-            hash_insert(hash, nums[mid]);
         }
     }
-    hash_clear(hash);
     return ans;
-}
-
-
-/*-----the contents below is copied from 2sum--------*/
-
-void hash_insert(struct hashTable *hash, const int key){
-    int value;
-    value = hash_function(key, hash->size);
-    while(hash->table[value] != INT_MAX){   //linear probing (modular addition)
-        value++;
-        value = value&((hash->size)-1);
-    }
-    hash->table[value] = key;
-}
-
-int hash_function(int key, const int size){
-    if(key<0)
-        key = ~key;
-    key = key ^ (key >> 4);
-    key = ~key + (key << 3);
-    key = key ^ (key >> 7);
-    return key&(size-1);    //since size-1=00...011...11, the bit operation & is equivalent to %
-}
-
-int hash_search(const struct hashTable *hash, const int key){   //if found, return its index in hashTable
-    int value;
-    value = hash_function(key, hash->size);
-    while(hash->table[value]!=key){
-        if(hash->table[value] == INT_MAX) //means that it is not in the table 
-            return -1;
-        value++;           //linear probing (modular addition)
-        value = value&((hash->size)-1);
-    }
-    return value;
-}
-
-void hash_clear(struct hashTable *hash){
-    free(hash->table);
-    free(hash);
 }
 
 
