@@ -48,8 +48,7 @@ int** threeSum(int* nums, int numsSize, int* returnSize, int** returnColumnSizes
     ans = (int**)malloc(sizeof(int*)*2000);  //guess a max size
     *returnColumnSizes = (int*)malloc(sizeof(int)*2000);
     
-    
-    for(right=numsSize-1; right; right--){
+    for(right=numsSize-1; right&&nums[right]>=0; right--){  //if nums[right]<0, then since the other two also <0, they cant form an answer
         for(i=0; i<hash->size; i++) //reset hash table
             hash->table[i] = INT_MAX;
         for(mid=0; mid<right; mid++){
