@@ -1,4 +1,5 @@
 #include<iostream>
+#include<fstream>
 using namespace std;
 
 #define max(a,b) (a>b?a:b)
@@ -13,7 +14,7 @@ public:
     AVL_node<T> *parent;
     AVL_node<T> *left;
     AVL_node<T> *right;
-    void compute_balance_factor();
+    void update_balance_factor();
     bool isLeaf();
     int getHeight();
 };
@@ -23,9 +24,11 @@ class AVL_tree
 {
 public:
     AVL_tree<T>();
+    AVL_tree<int>(fstream&);
     ~AVL_tree<T>(); //developing
-    bool insertNode(const T); //developing
+    bool insertNode(const T);
     bool deleteNode(const T); //developing
+    bool search(const T);
 private:
     AVL_node<T> *root;
     AVL_node<T>* findNode(const T);
@@ -33,14 +36,19 @@ private:
     void rotateLeft(AVL_node<T>*&);
     void rotateLeftRight(AVL_node<T>*&);
     void rotateRightLeft(AVL_node<T>*&);
+    void balance(AVL_node<T>*, const T);
 };
 
 
 int main()
 {
     AVL_tree <int> *myAVL;
-
+    fstream FILE;
+    FILE.open("int_input.txt", ios::in);
+    myAVL = new AVL_tree<int>(FILE);
+    FILE.close();
     
+    delete myAVL;
     system("pause");
     return 0;
 }
@@ -56,7 +64,7 @@ AVL_node<T>::AVL_node(T input){
 }
 
 template <class T>
-void AVL_node<T>::compute_balance_factor(){
+void AVL_node<T>::update_balance_factor(){
     balance_factor = left->getHeight() - right->getHeight();
 }
 
@@ -83,36 +91,51 @@ int AVL_node<T>::getHeight(){
         return 0;    
 }
 
+
 template <class T>
 AVL_tree<T>::AVL_tree(){
     this->root = NULL;
 }
 
+AVL_tree<int>::AVL_tree(fstream& inFILE){
+    int n;
+    while(!inFILE.eof()){
+        inFILE>>n;
+        insertNode(n);
+    }
+}
+
 template <class T>
 AVL_tree<T>::~AVL_tree(){
-    
+    AVL_node<T> *it, *temp;
+    // while(1){
+        
+    // }
 }
 
 template <class T>
 bool AVL_tree<T>::insertNode(const T input){
-    AVL_node<T> *newNode, *it, *temp;
+    AVL_node<T> *newNode, *it;
     newNode = new AVL_node<T>(input);
     if(!root) //empty tree
         root = newNode;
+    
     it = root;
-    while(1){   //find a place to insert
+    while(1){   //find a position to insert
         if(input < it->data){
-            if(!it->left){
+            if(!it->left){      //the position is found
                 it->left = newNode;
-                it->balance_factor+= 1;
+                newNode->parent = it;
+                balance(it, input);
                 break;
             }
             it = it->left;
         }
         else if(input > it->data){
-            if(!it->right){
+            if(!it->right){     //the position is found
                 it->right = newNode;
-                it->balance_factor+= -1;
+                newNode->parent = it;
+                balance(it, input);
                 break;
             }
             it = it->right;
@@ -122,17 +145,19 @@ bool AVL_tree<T>::insertNode(const T input){
             return false;
         }
     }
-
-    /*--- check if unbalanced ---*/
-    it = it->parent;
-    it->compute_balance_factor();
-
-    
+    return true;
 }
 
 template <class T>
 bool AVL_tree<T>::deleteNode(const T input){
     
+}
+
+template <class T>
+bool AVL_tree<T>::search(const T toFind){
+    if(findNode(toFind))
+        return true;
+    return false;
 }
 
 template <class T>
@@ -163,8 +188,8 @@ void AVL_tree<T>::rotateRight(AVL_node<T>*& subtree){
     oldLeftNode->right = subtree;
     subtree->parent = oldLeftNode;
 
-    subtree->compute_balance_factor();  //update
-    oldLeftNode->left->compute_balance_factor();
+    subtree->update_balance_factor();  //update
+    oldLeftNode->left->update_balance_factor();
     oldLeftNode->parent = superior; //upward connection
     subtree = oldLeftNode;
 }
@@ -182,8 +207,8 @@ void AVL_tree<T>::rotateLeft(AVL_node<T>*& subtree){
     oldRightNode->left = subtree;
     subtree->parent = oldRightNode;
 
-    subtree->compute_balance_factor();  //update
-    oldRightNode->right->compute_balance_factor();
+    subtree->update_balance_factor();  //update
+    oldRightNode->right->update_balance_factor();
     oldRightNode->parent = superior;    //upward connection
     subtree = oldRightNode;
 }
@@ -201,7 +226,7 @@ void AVL_tree<T>::rotateLeftRight(AVL_node<T>*& subtree){
     oldLeftNode->parent = subtree->left;
 
     rotateRight(subtree);
-    subtree->right->compute_balance_factor();
+    subtree->right->update_balance_factor();
 }
 
 template <class T>
@@ -210,12 +235,63 @@ void AVL_tree<T>::rotateRightLeft(AVL_node<T>*& subtree){
     subtree->right = oldRightNode->left;
     oldRightNode->left->parent = subtree;
 
-    oldRightNode->left = subtree->right0>right;
+    oldRightNode->left = subtree->right->right;
     oldRightNode->left->parent = oldRightNode;
 
     subtree->right->right = oldRightNode;
     oldRightNode->parent = subtree->right;
 
     rotateLeft(subtree);
-    subtree->left->compute_balance_factor();
+    subtree->left->update_balance_factor();
+}
+
+template <class T>
+void AVL_tree<T>::balance(AVL_node<T>* noviceParent, const T newData){
+    AVL_node<T> *it;
+    for(it=noviceParent; it; it=it->parent){
+        if(newData < it->data){  //if add happened at left
+            it->balance_factor++;
+            if(it->balance_factor == 2){
+                if(it->left->balance_factor == 1){
+                    if(!it->parent)
+                        rotateRight(root);
+                    else if(it->data < it->parent->data)
+                        rotateRight(it->parent->left);
+                    else if(it->data > it->parent->data)
+                        rotateRight(it->parent->right);
+                }
+                else if(it->left->balance_factor == -1){
+                    if(!it->parent)
+                        rotateLeftRight(root);
+                    else if(it->data < it->parent->data)
+                        rotateLeftRight(it->parent->left);
+                    else if(it->data > it->parent->data)
+                        rotateLeftRight(it->parent->right);
+                }
+                break;
+            }
+        }
+        else{        //if add happened at right
+            it->balance_factor--;
+            if(it->balance_factor == -2){
+                if(it->right->balance_factor == -1){
+                    if(!it->parent)
+                        rotateLeft(root);
+                    else if(it->data < it->parent->data)
+                        rotateLeft(it->parent->left);
+                    else if(it->data > it->parent->data)
+                        rotateLeft(it->parent->right);
+                }
+                else if(it->right->balance_factor == 1){
+                    if(!it->parent)
+                        rotateRightLeft(root);
+                    else if(it->data < it->parent->data)
+                        rotateRightLeft(it->parent->left);
+                    else if(it->data > it->parent->data)
+                        rotateRightLeft(it->parent->right);
+                }
+                break;
+            }
+        }
+    }
 }
