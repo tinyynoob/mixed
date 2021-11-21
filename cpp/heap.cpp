@@ -17,6 +17,7 @@ public:
     void insert(const int);
     int delete_at_root();  //if no root to delete, return 1; Otherwise, return 0;
     void printOut();
+    void printDOT(fstream&);    //print out a DOT file
     void sort();    //after sort(), the data would be arranged as a sorted vector no longer a heap
 private:
     vector <int> nodes;
@@ -32,7 +33,10 @@ int main()
     myHeap = new heap(FILE);
     FILE.close();
 
-    myHeap->printOut();
+    FILE.open("outGraph.dot", ios::out | ios::trunc);
+    myHeap->printDOT(FILE);
+    FILE.close();
+
     myHeap->sort();
     myHeap->printOut();
     delete myHeap;
@@ -130,6 +134,22 @@ void heap::printOut(){
     for(it=nodes.begin(); it!=nodes.end(); it++)
         cout<<*it<<' ';
     cout<<endl;
+}
+
+void heap::printDOT(fstream& outFILE){
+    int index, temp;
+    outFILE<<"digraph heap {\n";
+    for(index=0; index<nodes.size(); index++){
+        outFILE<<'\t'<<nodes.at(index)<<" -> {";
+        temp = 2*index+1;
+        if(temp < nodes.size()){
+            outFILE<<nodes.at(temp)<<' ';
+            if(++temp < nodes.size())
+                outFILE<<nodes.at(temp);
+        }
+        outFILE<<"};\n";
+    }
+    outFILE<<"}";
 }
 
 void heap::sort(){
