@@ -36,7 +36,9 @@ private:
     void rotateLeft(AVL_node<T>*&);
     void rotateLeftRight(AVL_node<T>*&);
     void rotateRightLeft(AVL_node<T>*&);
-    void balance(AVL_node<T>*, const T);
+    void insertBalance(AVL_node<T>*, const T);
+    void deleteBalance(AVL_node<T>*, const T);  //developing
+    void _BSTdelete(AVL_node<T>*&);
 };
 
 
@@ -121,12 +123,13 @@ bool AVL_tree<T>::insertNode(const T input){
         root = newNode;
     
     it = root;
-    while(1){   //find a position to insert
+    while(1)    //find a position to insert
+    {
         if(input < it->data){
             if(!it->left){      //the position is found
                 it->left = newNode;
                 newNode->parent = it;
-                balance(it, input);
+                insertBalance(it, input);
                 break;
             }
             it = it->left;
@@ -135,7 +138,7 @@ bool AVL_tree<T>::insertNode(const T input){
             if(!it->right){     //the position is found
                 it->right = newNode;
                 newNode->parent = it;
-                balance(it, input);
+                insertBalance(it, input);
                 break;
             }
             it = it->right;
@@ -149,8 +152,25 @@ bool AVL_tree<T>::insertNode(const T input){
 }
 
 template <class T>
-bool AVL_tree<T>::deleteNode(const T input){
-    
+bool AVL_tree<T>::deleteNode(const T toDelete){
+    AVL_node<T> *target, *temp;
+    target = findNode(toDelete);
+    if(!target) //there is no the node
+        return false;
+    temp = target->parent;
+    if(!temp)  //if delete at root
+        _BSTdelete(root);
+    else if(toDelete < temp->data)
+        _BSTdelete(temp->left);
+    else if(toDelete > temp->data)
+        _BSTdelete(temp->right);
+
+    //developing    //???
+    if(temp)
+        deleteBalance(temp, toDelete);
+    else
+        deleteBalance(root, toDelete);
+    return true;
 }
 
 template <class T>
@@ -246,9 +266,10 @@ void AVL_tree<T>::rotateRightLeft(AVL_node<T>*& subtree){
 }
 
 template <class T>
-void AVL_tree<T>::balance(AVL_node<T>* noviceParent, const T newData){
+void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent, const T newData){
     AVL_node<T> *it;
-    for(it=noviceParent; it; it=it->parent){
+    for(it=noviceParent; it; it=it->parent)
+    {
         if(newData < it->data){  //if add happened at left
             it->balance_factor++;
             if(it->balance_factor == 2){
@@ -293,5 +314,48 @@ void AVL_tree<T>::balance(AVL_node<T>* noviceParent, const T newData){
                 break;
             }
         }
+    }
+}
+
+template <class T>
+void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent, const T deadData){
+    AVL_node<T> *it;
+    for(it=grievingParent; it; it=it->parent)
+    {
+        
+    }
+}
+
+template <class T>
+void AVL_tree<T>::_BSTdelete(AVL_node<T>*& target){     //for recursive call
+/*------- kill the node target points to --------*/
+    AVL_node<T> *it;
+    if(target->left && target->right){  //if have two childs
+        if(!target->right->left){   //if the right subtree has no left child
+            target->data = target->right->data;
+            _BSTdelete(target->right);
+        }
+        else{
+            for(it=target->right; it->left; it=it->left)   //find leftmost node at right subtree
+                ;
+            target->data = it->left->data;
+            _BSTdelete(it->left);
+        }
+    }
+    else if(target->left){  //there is only left subtree
+        it = target;
+        target->left->parent = target->parent;
+        target = target->left;
+        delete it;
+    }
+    else if(target->right){ //there is only right subtree
+        it = target;
+        target->right->parent = target->parent;
+        target = target->right;
+        delete it;
+    }
+    else{   //no subtree
+        delete target;
+        target = NULL;
     }
 }
