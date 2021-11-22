@@ -1,10 +1,11 @@
 #include<iostream>
 #include<fstream>
+#include<typeinfo>
 using namespace std;
 
 #define max(a,b) (a>b?a:b)
 
-template <class T>
+template <typename T>
 class AVL_node
 {
 public:
@@ -19,17 +20,19 @@ public:
     int getHeight();
 };
 
-template <class T>
+template <typename T>
 class AVL_tree
 {
 public:
     AVL_tree<T>();
-    AVL_tree<int>(fstream&);
-    ~AVL_tree<T>(); //developing
+    AVL_tree(fstream&); //currently only supports int type
+    ~AVL_tree<T>();
     bool insertNode(const T);
     bool deleteNode(const T); //developing
     bool search(const T);
+    void printOutDOT(fstream&);
 private:
+    /* all functions starting with '_' is for recursive call */
     AVL_node<T> *root;
     AVL_node<T>* findNode(const T);
     void rotateRight(AVL_node<T>*&);
@@ -39,24 +42,32 @@ private:
     void insertBalance(AVL_node<T>*, const T);
     void deleteBalance(AVL_node<T>*, const T);  //developing
     void _BSTdelete(AVL_node<T>*&);
+    void _clear(AVL_node<T>*);  //this function will recursively destruct the whole tree
+    void _printOutDOT(fstream&, AVL_node<T>*);
 };
 
 
 int main()
 {
     AVL_tree <int> *myAVL;
-    fstream FILE;
-    FILE.open("int_input.txt", ios::in);
-    myAVL = new AVL_tree<int>(FILE);
-    FILE.close();
-    
+    fstream file;
+    // file.open("int_input.txt", ios::in);
+    // myAVL = new AVL_tree<int>(file);
+    // file.close();
+    myAVL = new AVL_tree<int>();
+    myAVL->insertNode(3);
+    myAVL->insertNode(4);
+
+    file.open("outGraph.dot", ios::out | ios::trunc);
+    myAVL->printOutDOT(file);
+    file.close();
     delete myAVL;
     system("pause");
     return 0;
 }
 
 
-template <class T>
+template <typename T>
 AVL_node<T>::AVL_node(T input){
     this->data = input;
     this->balance_factor = 0;
@@ -65,19 +76,19 @@ AVL_node<T>::AVL_node(T input){
     this->right = NULL;
 }
 
-template <class T>
+template <typename T>
 void AVL_node<T>::update_balance_factor(){
     balance_factor = left->getHeight() - right->getHeight();
 }
 
-template <class T>
+template <typename T>
 bool AVL_node<T>::isLeaf(){
     if(left || right)
         return false;
     return true;
 }
 
-template <class T>
+template <typename T>
 int AVL_node<T>::getHeight(){
     if(this->left && this->right){
         int a, b;
@@ -94,33 +105,40 @@ int AVL_node<T>::getHeight(){
 }
 
 
-template <class T>
+template <typename T>
 AVL_tree<T>::AVL_tree(){
     this->root = NULL;
 }
 
-AVL_tree<int>::AVL_tree(fstream& inFILE){
+template <typename T>
+AVL_tree<T>::AVL_tree(fstream& inFile){
     int n;
-    while(!inFILE.eof()){
-        inFILE>>n;
-        insertNode(n);
+    this->root = NULL;
+    if(typeid(T) != typeid(int)){
+        cerr<<"type error"<<endl;
+        return;
+    }
+    while(!inFile.eof()){
+        inFile>>n;
+        cout<<typeid(T).name()<<endl;
+        if(!insertNode(n))
+            cerr<<"insert error"<<endl;
     }
 }
 
-template <class T>
+template <typename T>
 AVL_tree<T>::~AVL_tree(){
-    AVL_node<T> *it, *temp;
-    // while(1){
-        
-    // }
+    _clear(root);
 }
 
-template <class T>
+template <typename T>
 bool AVL_tree<T>::insertNode(const T input){
     AVL_node<T> *newNode, *it;
     newNode = new AVL_node<T>(input);
-    if(!root) //empty tree
+    if(!root){ //empty tree
         root = newNode;
+        return true;
+    }
     
     it = root;
     while(1)    //find a position to insert
@@ -151,7 +169,7 @@ bool AVL_tree<T>::insertNode(const T input){
     return true;
 }
 
-template <class T>
+template <typename T>
 bool AVL_tree<T>::deleteNode(const T toDelete){
     AVL_node<T> *target, *temp;
     target = findNode(toDelete);
@@ -173,14 +191,21 @@ bool AVL_tree<T>::deleteNode(const T toDelete){
     return true;
 }
 
-template <class T>
+template <typename T>
 bool AVL_tree<T>::search(const T toFind){
     if(findNode(toFind))
         return true;
     return false;
 }
 
-template <class T>
+template <typename T>
+void AVL_tree<T>::printOutDOT(fstream& outFile){
+    outFile<<"digraph AVL_tree {\n";
+    _printOutDOT(outFile, root);
+    outFile<<"}";
+}
+
+template <typename T>
 AVL_node<T>* AVL_tree<T>::findNode(const T toFind){
     AVL_node<T> *it;
     it = root;
@@ -195,7 +220,7 @@ AVL_node<T>* AVL_tree<T>::findNode(const T toFind){
     return NULL;    //cant find
 }
 
-template <class T>
+template <typename T>
 void AVL_tree<T>::rotateRight(AVL_node<T>*& subtree){
     AVL_node<T> *superior, *oldLeftNode;
     superior = subtree->parent;
@@ -214,7 +239,7 @@ void AVL_tree<T>::rotateRight(AVL_node<T>*& subtree){
     subtree = oldLeftNode;
 }
 
-template <class T>
+template <typename T>
 void AVL_tree<T>::rotateLeft(AVL_node<T>*& subtree){
     AVL_node<T> *superior, *oldRightNode;
     superior = subtree->parent;
@@ -233,7 +258,7 @@ void AVL_tree<T>::rotateLeft(AVL_node<T>*& subtree){
     subtree = oldRightNode;
 }
 
-template <class T>
+template <typename T>
 void AVL_tree<T>::rotateLeftRight(AVL_node<T>*& subtree){
     AVL_node<T> *oldLeftNode;
     subtree->left = oldLeftNode->right;
@@ -249,7 +274,7 @@ void AVL_tree<T>::rotateLeftRight(AVL_node<T>*& subtree){
     subtree->right->update_balance_factor();
 }
 
-template <class T>
+template <typename T>
 void AVL_tree<T>::rotateRightLeft(AVL_node<T>*& subtree){
     AVL_node<T> *oldRightNode;
     subtree->right = oldRightNode->left;
@@ -265,7 +290,7 @@ void AVL_tree<T>::rotateRightLeft(AVL_node<T>*& subtree){
     subtree->left->update_balance_factor();
 }
 
-template <class T>
+template <typename T>
 void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent, const T newData){
     AVL_node<T> *it;
     for(it=noviceParent; it; it=it->parent)
@@ -317,7 +342,7 @@ void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent, const T newData){
     }
 }
 
-template <class T>
+template <typename T>
 void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent, const T deadData){
     AVL_node<T> *it;
     for(it=grievingParent; it; it=it->parent)
@@ -326,8 +351,8 @@ void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent, const T deadData){
     }
 }
 
-template <class T>
-void AVL_tree<T>::_BSTdelete(AVL_node<T>*& target){     //for recursive call
+template <typename T>
+void AVL_tree<T>::_BSTdelete(AVL_node<T>*& target){
 /*------- kill the node target points to --------*/
     AVL_node<T> *it;
     if(target->left && target->right){  //if have two childs
@@ -358,4 +383,28 @@ void AVL_tree<T>::_BSTdelete(AVL_node<T>*& target){     //for recursive call
         delete target;
         target = NULL;
     }
+}
+
+template <typename T>
+void AVL_tree<T>::_clear(AVL_node<T>* subtree){
+    if(subtree->left)
+        _clear(subtree->left);
+    if(subtree->right)
+        _clear(subtree->right);
+    delete subtree;
+}
+
+template <typename T>
+void AVL_tree<T>::_printOutDOT(fstream& outFile, AVL_node<T>* subtree){
+    outFile<< '\t' << subtree->data << " -> {";
+    if(subtree->left)
+        outFile<< subtree->left->data << ' ';
+    if(subtree->right)
+        outFile<< subtree->right->data;
+    outFile<< "};\n";
+
+    if(subtree->left)
+        _printOutDOT(outFile, subtree->left);
+    if(subtree->right)
+        _printOutDOT(outFile, subtree->right);
 }
