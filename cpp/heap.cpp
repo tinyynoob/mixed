@@ -17,6 +17,7 @@ public:
     void insert(const int);
     int delete_at_root();  //if no root to delete, return 1; Otherwise, return 0;
     void printOut();
+    void printOutDOT(fstream&);    //print out a DOT file
     void sort();    //after sort(), the data would be arranged as a sorted vector no longer a heap
 private:
     vector <int> nodes;
@@ -27,12 +28,15 @@ private:
 int main()
 {
     heap *myHeap;
-    fstream FILE;
-    FILE.open("int_input.txt", ios::in);
-    myHeap = new heap(FILE);
-    FILE.close();
+    fstream file;
+    file.open("int_input.txt", ios::in);
+    myHeap = new heap(file);
+    file.close();
 
-    myHeap->printOut();
+    file.open("outGraph.dot", ios::out | ios::trunc);
+    myHeap->printOutDOT(file);
+    file.close();
+
     myHeap->sort();
     myHeap->printOut();
     delete myHeap;
@@ -40,11 +44,11 @@ int main()
     return 0;
 }
 
-heap::heap(fstream& inFILE) //call by reference
+heap::heap(fstream& inFile) //call by reference
 {
     int n;
-    while(!inFILE.eof()){
-        inFILE>>n;
+    while(!inFile.eof()){
+        inFile>>n;
         insert(n);
     }
 }
@@ -130,6 +134,22 @@ void heap::printOut(){
     for(it=nodes.begin(); it!=nodes.end(); it++)
         cout<<*it<<' ';
     cout<<endl;
+}
+
+void heap::printOutDOT(fstream& outFile){
+    int index, temp;
+    outFile<<"digraph heap {\n";
+    for(index=0,temp=0; temp<nodes.size(); index++){
+        outFile<<'\t'<<nodes.at(index)<<" -> {";
+        temp = 2*index+1;
+        if(temp < nodes.size()){
+            outFile<<nodes.at(temp);
+            if(++temp < nodes.size())
+                outFile<<' '<<nodes.at(temp);
+        }
+        outFile<<"};\n";
+    }
+    outFile<<"}";
 }
 
 void heap::sort(){
