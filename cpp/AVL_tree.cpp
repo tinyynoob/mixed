@@ -31,15 +31,14 @@ public:
     bool deleteNode(const T); //developing
     bool search(const T);
     void printOutDOT(fstream&);
-private:
-    /* all functions starting with '_' is for recursive call */
+private:    /* all functions starting with '_' is for recursive call */
     AVL_node<T> *root;
     AVL_node<T>* findNode(const T);
-    void rotateRight(AVL_node<T>*&);
-    void rotateLeft(AVL_node<T>*&);
-    void rotateLeftRight(AVL_node<T>*&);
-    void rotateRightLeft(AVL_node<T>*&);
-    void insertBalance(AVL_node<T>*, const T);
+    AVL_node<T>* rotateRight(AVL_node<T>*);
+    AVL_node<T>* rotateLeft(AVL_node<T>*);
+    AVL_node<T>* rotateLeftRight(AVL_node<T>*);
+    AVL_node<T>* rotateRightLeft(AVL_node<T>*);
+    void insertBalance(AVL_node<T>*, const T); //including update balance factor
     void deleteBalance(AVL_node<T>*, const T);  //developing
     void _BSTdelete(AVL_node<T>*&);
     void _clear(AVL_node<T>*);  //this function will recursively destruct the whole tree
@@ -57,6 +56,9 @@ int main()
     myAVL = new AVL_tree<int>();
     myAVL->insertNode(3);
     myAVL->insertNode(4);
+    myAVL->insertNode(5);
+    myAVL->insertNode(6);
+    //myAVL->insertNode(4);
 
     file.open("outGraph.dot", ios::out | ios::trunc);
     myAVL->printOutDOT(file);
@@ -78,7 +80,16 @@ AVL_node<T>::AVL_node(T input){
 
 template <typename T>
 void AVL_node<T>::update_balance_factor(){
-    balance_factor = left->getHeight() - right->getHeight();
+    //cout<<"entering update_balance_factor() , I am "<<this->data<<endl;    //for debug
+    //cout<<"my left is "<<this->left->data<<", my right is "<<this->right->data<<endl;   //for debug
+    if(this->left && this->right)
+        this->balance_factor = this->left->getHeight() - this->right->getHeight();
+    else if(this->left)
+        this->balance_factor = this->left->getHeight() - (-1);  //note that empty tree has length -1
+    else if(this->right)
+        this->balance_factor = (-1) - this->right->getHeight();
+    else
+        this->balance_factor = 0;
 }
 
 template <typename T>
@@ -90,18 +101,19 @@ bool AVL_node<T>::isLeaf(){
 
 template <typename T>
 int AVL_node<T>::getHeight(){
+    //cout<<"entering getHeight() , I am "<<this->data<<endl;    //for debug
     if(this->left && this->right){
         int a, b;
         a = this->left->getHeight();
         b = this->right->getHeight();
         return max(a,b)+1;
     }
-    else if(this->left)
+    else if(this->left)     //there is only left subtree
         return this->left->getHeight()+1;
-    else if(this->right)
+    else if(this->right)    //there is only right subtree
         return this->right->getHeight()+1;
-    else
-        return 0;    
+    else    //it is leaf
+        return 0;
 }
 
 
@@ -120,7 +132,7 @@ AVL_tree<T>::AVL_tree(fstream& inFile){
     }
     while(!inFile.eof()){
         inFile>>n;
-        cout<<typeid(T).name()<<endl;
+        //cout<<typeid(T).name()<<endl; //for debug
         if(!insertNode(n))
             cerr<<"insert error"<<endl;
     }
@@ -134,6 +146,7 @@ AVL_tree<T>::~AVL_tree(){
 template <typename T>
 bool AVL_tree<T>::insertNode(const T input){
     AVL_node<T> *newNode, *it;
+    cout<<"trying to insert: "<<input<<endl;    //for debug
     newNode = new AVL_node<T>(input);
     if(!root){ //empty tree
         root = newNode;
@@ -163,6 +176,7 @@ bool AVL_tree<T>::insertNode(const T input){
         }
         else{      //duplicate node
             delete newNode;
+            cout<<"duplicate date: "<<input<<endl;
             return false;
         }
     }
@@ -221,98 +235,87 @@ AVL_node<T>* AVL_tree<T>::findNode(const T toFind){
 }
 
 template <typename T>
-void AVL_tree<T>::rotateRight(AVL_node<T>*& subtree){
-    AVL_node<T> *superior, *oldLeftNode;
-    superior = subtree->parent;
+AVL_node<T>* AVL_tree<T>::rotateRight(AVL_node<T>* subtree){
+    AVL_node<T> *oldLeftNode;
     oldLeftNode = subtree->left;
     
     subtree->left = oldLeftNode->right;
     if(oldLeftNode->right)
         oldLeftNode->right->parent = subtree;
 
+    oldLeftNode->parent = subtree->parent;      //upward connection
     oldLeftNode->right = subtree;
     subtree->parent = oldLeftNode;
-
-    subtree->update_balance_factor();  //update
-    oldLeftNode->left->update_balance_factor();
-    oldLeftNode->parent = superior; //upward connection
-    subtree = oldLeftNode;
+    return oldLeftNode;     //return the new root of the subtree
 }
 
 template <typename T>
-void AVL_tree<T>::rotateLeft(AVL_node<T>*& subtree){
-    AVL_node<T> *superior, *oldRightNode;
-    superior = subtree->parent;
+AVL_node<T>* AVL_tree<T>::rotateLeft(AVL_node<T>* subtree){
+    AVL_node<T> *oldRightNode;
     oldRightNode = subtree->right;
 
     subtree->right = oldRightNode->left;
     if(oldRightNode->left)
         oldRightNode->left->parent = subtree;
     
+    oldRightNode->parent = subtree->parent;     //upward connection
     oldRightNode->left = subtree;
     subtree->parent = oldRightNode;
-
-    subtree->update_balance_factor();  //update
-    oldRightNode->right->update_balance_factor();
-    oldRightNode->parent = superior;    //upward connection
-    subtree = oldRightNode;
+    return oldRightNode;    //return the new root of the subtree
 }
 
 template <typename T>
-void AVL_tree<T>::rotateLeftRight(AVL_node<T>*& subtree){
+AVL_node<T>* AVL_tree<T>::rotateLeftRight(AVL_node<T>* subtree){
     AVL_node<T> *oldLeftNode;
+    oldLeftNode = subtree->left;
+
     subtree->left = oldLeftNode->right;
     oldLeftNode->right->parent = subtree;
 
     oldLeftNode->right = subtree->left->left;
-    oldLeftNode->right->parent = oldLeftNode;
+    subtree->left->left->parent = oldLeftNode;
 
     subtree->left->left = oldLeftNode;
     oldLeftNode->parent = subtree->left;
 
-    rotateRight(subtree);
-    subtree->right->update_balance_factor();
+    return rotateRight(subtree);
 }
 
 template <typename T>
-void AVL_tree<T>::rotateRightLeft(AVL_node<T>*& subtree){
+AVL_node<T>* AVL_tree<T>::rotateRightLeft(AVL_node<T>* subtree){
     AVL_node<T> *oldRightNode;
+    oldRightNode = subtree->right;
+
     subtree->right = oldRightNode->left;
     oldRightNode->left->parent = subtree;
 
     oldRightNode->left = subtree->right->right;
-    oldRightNode->left->parent = oldRightNode;
+    subtree->right->right->parent = oldRightNode;
 
     subtree->right->right = oldRightNode;
     oldRightNode->parent = subtree->right;
 
-    rotateLeft(subtree);
-    subtree->left->update_balance_factor();
+    return rotateLeft(subtree);
 }
 
 template <typename T>
 void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent, const T newData){
-    AVL_node<T> *it;
+    AVL_node<T> *it, *newRootOfRotatedSubtree;
     for(it=noviceParent; it; it=it->parent)
     {
         if(newData < it->data){  //if add happened at left
             it->balance_factor++;
             if(it->balance_factor == 2){
                 if(it->left->balance_factor == 1){
-                    if(!it->parent)
-                        rotateRight(root);
-                    else if(it->data < it->parent->data)
-                        rotateRight(it->parent->left);
-                    else if(it->data > it->parent->data)
-                        rotateRight(it->parent->right);
+                    cout<<"trying to rotateRight the tree "<<newData<<endl; //for debug
+                    newRootOfRotatedSubtree = rotateRight(it);
+                    newRootOfRotatedSubtree->update_balance_factor();
+                    newRootOfRotatedSubtree->right->update_balance_factor();
                 }
                 else if(it->left->balance_factor == -1){
-                    if(!it->parent)
-                        rotateLeftRight(root);
-                    else if(it->data < it->parent->data)
-                        rotateLeftRight(it->parent->left);
-                    else if(it->data > it->parent->data)
-                        rotateLeftRight(it->parent->right);
+                    cout<<"trying to rotateLeftRight the tree "<<newData<<endl; //for debug
+                    newRootOfRotatedSubtree = rotateLeftRight(it);
+                    newRootOfRotatedSubtree->right->update_balance_factor();
                 }
                 break;
             }
@@ -321,20 +324,15 @@ void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent, const T newData){
             it->balance_factor--;
             if(it->balance_factor == -2){
                 if(it->right->balance_factor == -1){
-                    if(!it->parent)
-                        rotateLeft(root);
-                    else if(it->data < it->parent->data)
-                        rotateLeft(it->parent->left);
-                    else if(it->data > it->parent->data)
-                        rotateLeft(it->parent->right);
+                    cout<<"trying to rotateLeft the tree "<<it->data<<endl; //for debug
+                    newRootOfRotatedSubtree = rotateLeft(it);
+                    newRootOfRotatedSubtree->update_balance_factor();
+                    newRootOfRotatedSubtree->left->update_balance_factor();
                 }
                 else if(it->right->balance_factor == 1){
-                    if(!it->parent)
-                        rotateRightLeft(root);
-                    else if(it->data < it->parent->data)
-                        rotateRightLeft(it->parent->left);
-                    else if(it->data > it->parent->data)
-                        rotateRightLeft(it->parent->right);
+                    cout<<"trying to rotateRightLeft the tree "<<newData<<endl; //for debug
+                    newRootOfRotatedSubtree = rotateRightLeft(it);
+                    newRootOfRotatedSubtree->left->update_balance_factor();
                 }
                 break;
             }
@@ -396,6 +394,7 @@ void AVL_tree<T>::_clear(AVL_node<T>* subtree){
 
 template <typename T>
 void AVL_tree<T>::_printOutDOT(fstream& outFile, AVL_node<T>* subtree){
+    cout<<"entering _printOutDOT(), I am "<<subtree->data<<endl;    //for debug
     outFile<< '\t' << subtree->data << " -> {";
     if(subtree->left)
         outFile<< subtree->left->data << ' ';
