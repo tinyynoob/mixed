@@ -10,13 +10,14 @@ class AVL_node
 {
 public:
     AVL_node<T>(T);
+    template<typename U> friend class AVL_tree;
+private:
     T data;
-    int balance_factor;     //defined by height of left subtree subtracting height of right subtree
     AVL_node<T> *parent;
     AVL_node<T> *left;
     AVL_node<T> *right;
+    int balance_factor;     //defined by height of left subtree subtracting height of right subtree
     void update_balance_factor();
-    bool isLeaf();
     int getHeight();
 };
 
@@ -34,15 +35,15 @@ public:
 private:    /* all functions starting with '_' are for recursive call */
     AVL_node<T> *root;
     AVL_node<T>* findNode(const T);
+    AVL_node<T>* _BSTdelete(AVL_node<T>*, AVL_node<T>*&);
+    void insertBalance(AVL_node<T>*);   //including update balance factor
+    void deleteBalance(AVL_node<T>*);   //including update balance factor
     AVL_node<T>* rotateRight(AVL_node<T>*);
     AVL_node<T>* rotateLeft(AVL_node<T>*);
     AVL_node<T>* rotateLeftRight(AVL_node<T>*);
     AVL_node<T>* rotateRightLeft(AVL_node<T>*);
-    void insertBalance(AVL_node<T>*);   //including update balance factor
-    void deleteBalance(AVL_node<T>*);   //including update balance factor
-    AVL_node<T>* _BSTdelete(AVL_node<T>*, AVL_node<T>*&);
-    void _clear(AVL_node<T>*);  //this function will recursively destruct the whole tree
     void _printOutDOT(fstream&, AVL_node<T>*);
+    void _clear(AVL_node<T>*);  //this function will recursively destruct the whole tree
 };
 
 
@@ -69,23 +70,23 @@ int main()
             cout<<"the data to insert: ";
             cin>>data;
             if(!myAVL->insertNode(data))
-                cout<< "insert failed: duplicate data" <<endl;
+                cout<< "--insert failed: duplicate data" <<endl;
             break;
         case 2:
             cout<<"the data to delete: ";
             cin>>data;
             if(!myAVL->deleteNode(data))
-                cout<<"wrong input, can't find the data"<<endl;
+                cout<< "--wrong input, can't find the data" <<endl;
             break;
         case 3:
-            cout<<"the data to search: ";
+            cout<< "the data to search: ";
             cin>>data;
-            cout<<myAVL->search(data)<<endl;
+            cout<< myAVL->search(data) <<endl;
             break;
         case 0:
             break;
         default:
-            cout<<"ERROR: no the option"<<endl;
+            cout<< "ERROR: no the option" <<endl;
         }
         file.open("outGraph.dot", ios::out | ios::trunc);
         myAVL->printOutDOT(file);
@@ -119,13 +120,6 @@ void AVL_node<T>::update_balance_factor(){
         this->balance_factor = (-1) - this->right->getHeight();
     else
         this->balance_factor = 0;
-}
-
-template <typename T>
-bool AVL_node<T>::isLeaf(){
-    if(left || right)
-        return false;
-    return true;
 }
 
 template <typename T>
@@ -163,7 +157,7 @@ AVL_tree<T>::AVL_tree(fstream& inFile){
         inFile>>n;
         //cout<<typeid(T).name()<<endl; //for debug
         if(!insertNode(n))
-            cout<< "insert failed: duplicate data " << n <<endl;
+            cout<< "--insert failed: duplicate data " << n <<endl;
     }
 }
 
@@ -227,7 +221,6 @@ bool AVL_tree<T>::deleteNode(const T toDelete){
         temp->left = _BSTdelete(target, deepestGrievingParent);
     else if(toDelete > temp->data)  //if delete at right
         temp->right = _BSTdelete(target, deepestGrievingParent);
-    //cout<< toDelete <<" is deleted."<<endl; //for debug
     
     if(deepestGrievingParent)
         deleteBalance(deepestGrievingParent);   //including update balance factor
@@ -262,7 +255,7 @@ AVL_node<T>* AVL_tree<T>::findNode(const T toFind){
         else
             return it;
     }
-    return NULL;    //cant find
+    return NULL;    //can't find
 }
 
 template <typename T>
