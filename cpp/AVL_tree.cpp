@@ -39,8 +39,8 @@ private:    /* all functions starting with '_' are for recursive call */
     AVL_node<T>* rotateLeftRight(AVL_node<T>*);
     AVL_node<T>* rotateRightLeft(AVL_node<T>*);
     void insertBalance(AVL_node<T>*);   //including update balance factor
-    void deleteBalance(AVL_node<T>*, const T);  //developing
-    void _BSTdelete(AVL_node<T>*&);
+    void deleteBalance(AVL_node<T>*);  //developing
+    AVL_node<T>* _BSTdelete(AVL_node<T>*, AVL_node<T>*&);  //developing
     void _clear(AVL_node<T>*);  //this function will recursively destruct the whole tree
     void _printOutDOT(fstream&, AVL_node<T>*);
 };
@@ -179,23 +179,23 @@ bool AVL_tree<T>::insertNode(const T input){
 
 template <typename T>
 bool AVL_tree<T>::deleteNode(const T toDelete){
-    AVL_node<T> *target, *temp;
+    AVL_node<T> *target, *temp, *deepestGrievingParent;
     target = findNode(toDelete);
     if(!target) //there is no the node
         return false;
+
+    deepestGrievingParent = NULL;
     temp = target->parent;
     if(!temp)  //if delete at root
-        _BSTdelete(root);
-    else if(toDelete < temp->data)
-        _BSTdelete(temp->left);
-    else if(toDelete > temp->data)
-        _BSTdelete(temp->right);
-
-    //developing    //???
-    if(temp)
-        deleteBalance(temp, toDelete);
-    else
-        deleteBalance(root, toDelete);
+        root = _BSTdelete(target, deepestGrievingParent);
+    else if(toDelete < temp->data)  //if delete at left
+        temp->left = _BSTdelete(target, deepestGrievingParent);
+    else if(toDelete > temp->data)  //if delete at right
+        temp->right = _BSTdelete(target, deepestGrievingParent); 
+    
+    if(deepestGrievingParent)
+        deleteBalance(deepestGrievingParent);   //including update balance factor
+    //otherwise, the tree is now empty
     return true;
 }
 
@@ -352,45 +352,61 @@ void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent){
 }
 
 template <typename T>
-void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent, const T deadData){
-    AVL_node<T> *it;
-    for(it=grievingParent; it; it=it->parent)
+void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent){
+    AVL_node<T> *it, *newRootOfRotatedSubtree;
+
+    for(it=grievingParent; it; it=it->parent)   //traverse upward and update each balance factor
     {
-        
+        it->update_balance_factor();
+        if(it->balance_factor == 2){
+            
+        }
+        else if(it->balance_factor == -2){
+            
+        }
+
     }
 }
 
 template <typename T>
-void AVL_tree<T>::_BSTdelete(AVL_node<T>*& target){
-/*------- kill the node target points to --------*/
+AVL_node<T>* AVL_tree<T>::_BSTdelete(AVL_node<T>* target, AVL_node<T>*& deepestGrievingParent){
+/*------- kill the node pointed by target and return new root of this subtree --------*/
     AVL_node<T> *it;
-    if(target->left && target->right){  //if have two childs
+    if(target->left && target->right){  //if have two childs, replace target->data by the data in specified node, and delete this node
         if(!target->right->left){   //if the right subtree has no left child
             target->data = target->right->data;
-            _BSTdelete(target->right);
+            target->right = _BSTdelete(target->right, deepestGrievingParent);
+            //forward the return from deeper recursion
+            return target;  //unchanged since data replacement does not kill target node
         }
         else{
-            for(it=target->right; it->left; it=it->left)   //find leftmost node at right subtree
+            for(it=target->right; it->left; it=it->left)   //find leftmost node in right subtree
                 ;
+            it = it->parent;    //back one step
             target->data = it->left->data;
-            _BSTdelete(it->left);
+            it->left = _BSTdelete(it->left, deepestGrievingParent);
+            //forward the return from deeper recursion
+            return target;  //unchanged since data replacement does not kill target node
         }
     }
-    else if(target->left){  //there is only left subtree
-        it = target;
-        target->left->parent = target->parent;
-        target = target->left;
-        delete it;
+    else if(target->left){  //if there is only left subtree, delete and reconnect the nodes (no data replacement)
+        it = target->left;  //*it will be the new root of this subtree
+        it->parent = target->parent;  //upward connection
+        deepestGrievingParent = target->parent;
+        delete target;
+        return it;
     }
-    else if(target->right){ //there is only right subtree
-        it = target;
-        target->right->parent = target->parent;
-        target = target->right;
-        delete it;
+    else if(target->right){ //if there is only right subtree, delete and reconnect the nodes (no data replacement)
+        it = target->right; //*it will be the new root of this subtree
+        it->parent = target->parent; //upward connection
+        deepestGrievingParent = target->parent;
+        delete target;
+        return it;
     }
     else{   //no subtree
+        deepestGrievingParent = target->parent;
         delete target;
-        target = NULL;
+        return NULL;
     }
 }
 
