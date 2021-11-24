@@ -1,6 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include<typeinfo>
+#include<vector>
 using namespace std;
 
 #define max(a,b) (a>b?a:b)
@@ -36,8 +37,7 @@ private:    /* all functions starting with '_' are for recursive call */
     AVL_node<T> *root;
     AVL_node<T>* findNode(const T);
     AVL_node<T>* _BSTdelete(AVL_node<T>*, AVL_node<T>*&);
-    void insertBalance(AVL_node<T>*);   //including update balance factor
-    void deleteBalance(AVL_node<T>*);   //including update balance factor
+    void balance(AVL_node<T>*, bool);   //including update balance factor
     AVL_node<T>* rotateRight(AVL_node<T>*);
     AVL_node<T>* rotateLeft(AVL_node<T>*);
     AVL_node<T>* rotateLeftRight(AVL_node<T>*);
@@ -50,9 +50,10 @@ private:    /* all functions starting with '_' are for recursive call */
 int main()
 {
     AVL_tree <int> *myAVL;
-    int data;
+    vector <int> data;
+    int inputValue;
     fstream file;
-    int option;
+    int i, n, option;
     file.open("int_input.txt", ios::in);
     myAVL = new AVL_tree<int>(file);
     file.close();
@@ -62,35 +63,64 @@ int main()
     cout<<boolalpha;    //print "true" or "false" when cout a bool variable
 
     do{
-        cout<<"Functions: (1)insert a data (2)delete a data (3)search a data (0)exit"<<endl<<": ";        
+        cout<<"Functions: (1)insert data (2)delete data (3)search a data (4)insert multiple data (5)delete multiple data (0)exit"<<endl<<": ";        
         cin>>option;
         switch(option)
         {
         case 1:
             cout<<"the data to insert: ";
-            cin>>data;
-            if(!myAVL->insertNode(data))
+            cin>>inputValue;
+            if(!myAVL->insertNode(inputValue))
                 cout<< "--insert failed: duplicate data" <<endl;
             break;
         case 2:
             cout<<"the data to delete: ";
-            cin>>data;
-            if(!myAVL->deleteNode(data))
-                cout<< "--wrong input, can't find the data" <<endl;
+            cin>>inputValue;
+            if(!myAVL->deleteNode(inputValue))
+                cout<< "--delete failed: can't find the data" <<endl;
             break;
         case 3:
             cout<< "the data to search: ";
-            cin>>data;
-            cout<< myAVL->search(data) <<endl;
+            cin>>inputValue;
+            cout<< myAVL->search(inputValue) <<endl;
+            break;
+        case 4:
+            cout<< "number of data to insert: ";
+            cin>>n;
+            if(n <= 0)
+                cout<< "--only positive number accepted"<<endl;
+            for(i=0; i<n; i++){
+                cout<< i+1 <<"-th data to insert: ";
+                cin>>inputValue;
+                data.push_back(inputValue);
+            }
+            for(i=0; i<n; i++)
+                if( !myAVL->insertNode(data.at(i)) )
+                    cout<< "--insert failed: duplicate data " << data.at(i) <<endl;
+            break;
+        case 5:
+            cout<< "number of data to delete: ";
+            cin>>n;
+            if(n <= 0)
+                cout<< "--only positive number accepted"<<endl;
+            for(i=0; i<n; i++){
+                cout<< i+1 <<"-th data to delete: ";
+                cin>>inputValue;
+                data.push_back(inputValue);
+            }
+            for(i=0; i<n; i++)
+                if( !myAVL->deleteNode(data.at(i)) )
+                    cout<< "--delete failed: can't find data " << data.at(i) <<endl;
             break;
         case 0:
             break;
         default:
-            cout<< "ERROR: no the option" <<endl;
+            cout<< "ERROR: no this option" <<endl;
         }
         file.open("outGraph.dot", ios::out | ios::trunc);
         myAVL->printOutDOT(file);
         file.close();
+        data.resize(0);
     }while(option);
 
     delete myAVL;
@@ -183,8 +213,8 @@ bool AVL_tree<T>::insertNode(const T input){
             if(!it->left){      //the position is found
                 it->left = newNode;
                 newNode->parent = it;
-                insertBalance(it);  //update balance factor step by step to root and check if any rotation needed
-                break;
+                balance(it, true);  //update balance factor upward and check if any rotation needed
+                return true;
             }
             it = it->left;
         }
@@ -192,18 +222,16 @@ bool AVL_tree<T>::insertNode(const T input){
             if(!it->right){     //the position is found
                 it->right = newNode;
                 newNode->parent = it;
-                insertBalance(it);  //update balance factor step by step to root and check if any rotation needed
-                break;
+                balance(it, true);  //update balance factor upward and check if any rotation needed
+                return true;
             }
             it = it->right;
         }
         else{      //duplicate node
             delete newNode;
-            //cout<<"duplicate data: "<<input<<endl;
             return false;
         }
     }
-    return true;
 }
 
 template <typename T>
@@ -223,7 +251,7 @@ bool AVL_tree<T>::deleteNode(const T toDelete){
         temp->right = _BSTdelete(target, deepestGrievingParent);
     
     if(deepestGrievingParent)
-        deleteBalance(deepestGrievingParent);   //including update balance factor
+        balance(deepestGrievingParent, false);   //update balance factor step by step to root and check if any rotation needed
     //otherwise, the tree is now empty
     return true;
 }
@@ -323,70 +351,11 @@ AVL_node<T>* AVL_tree<T>::rotateRightLeft(AVL_node<T>* subtree){
 }
 
 template <typename T>
-void AVL_tree<T>::insertBalance(AVL_node<T>* noviceParent){
+void AVL_tree<T>::balance(AVL_node<T>* begin, bool inserting){
+    //cout<<"entering balance("<< begin->data <<")"<<endl;   //for debug
     AVL_node<T> *it, *newRootOfRotatedSubtree, *temp;
 
-    for(it=noviceParent; it; it=it->parent)
-    {
-        it->update_balance_factor();
-        if(it->balance_factor == 2){
-            if(it->left->balance_factor == 1){
-                //cout<<"trying to rotateRight the tree "<<it->data<<endl; //for debug
-                temp = it->parent;
-                newRootOfRotatedSubtree = rotateRight(it);
-                newRootOfRotatedSubtree->update_balance_factor();
-                newRootOfRotatedSubtree->right->update_balance_factor();
-            }
-            else if(it->left->balance_factor == -1){
-                //cout<<"trying to rotateLeftRight the tree "<<it->data<<endl; //for debug
-                temp = it->parent;
-                newRootOfRotatedSubtree = rotateLeftRight(it);
-                newRootOfRotatedSubtree->update_balance_factor();
-                newRootOfRotatedSubtree->left->update_balance_factor();
-                newRootOfRotatedSubtree->right->update_balance_factor();
-            }
-            else    //impossible
-                ;
-        }
-        else if(it->balance_factor == -2){
-            if(it->right->balance_factor == -1){
-                //cout<<"trying to rotateLeft the tree "<<it->data<<endl; //for debug
-                temp = it->parent;
-                newRootOfRotatedSubtree = rotateLeft(it);
-                newRootOfRotatedSubtree->update_balance_factor();
-                newRootOfRotatedSubtree->left->update_balance_factor();
-            }
-            else if(it->right->balance_factor == 1){
-                //cout<<"trying to rotateRightLeft the tree "<<it->data<<endl; //for debug
-                temp = it->parent;
-                newRootOfRotatedSubtree = rotateRightLeft(it);
-                newRootOfRotatedSubtree->update_balance_factor();
-                newRootOfRotatedSubtree->left->update_balance_factor();
-                newRootOfRotatedSubtree->right->update_balance_factor();
-            }
-            else    //impossible
-                ;
-        }
-        else
-            continue;
-
-        //if there is any rotation
-        if(!temp)   //if that is root being rotated
-            root = newRootOfRotatedSubtree;
-        else if(it->data < temp->data)   //rotation happened at left
-            temp->left = newRootOfRotatedSubtree;
-        else if(it->data > temp->data)   //rotation happened at right
-            temp->right = newRootOfRotatedSubtree;
-        break;
-    }
-}
-
-template <typename T>
-void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent){
-    //cout<<"entering deleteBalance("<< grievingParent->data <<")"<<endl;   //for debug
-    AVL_node<T> *it, *newRootOfRotatedSubtree, *temp;
-
-    for(it=grievingParent; it; it=it->parent)   //traverse upward and update each balance factor
+    for(it=begin; it; it=it->parent)   //traverse upward and update each balance factor
     {
         it->update_balance_factor();
         if(it->balance_factor == 2){
@@ -405,6 +374,8 @@ void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent){
                 newRootOfRotatedSubtree->left->update_balance_factor();
                 newRootOfRotatedSubtree->right->update_balance_factor();
             }
+            else    //impossible
+                ;
         }
         else if(it->balance_factor == -2){
             if(it->right->balance_factor <= 0){
@@ -422,6 +393,8 @@ void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent){
                 newRootOfRotatedSubtree->left->update_balance_factor();
                 newRootOfRotatedSubtree->right->update_balance_factor();
             }
+            else    //impossible
+                ;
         }
         else
             continue;
@@ -433,6 +406,10 @@ void AVL_tree<T>::deleteBalance(AVL_node<T>* grievingParent){
             temp->left = newRootOfRotatedSubtree;
         else if(it->data > temp->data)   //rotation happened at right
             temp->right = newRootOfRotatedSubtree;
+
+        if(inserting)   //indicator
+            break;
+        //if deleting, we should keep balance until root
     }
 }
 
