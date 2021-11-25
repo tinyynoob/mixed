@@ -24,16 +24,26 @@ public:
     int getStatus(){ return status;};
 private:
     string memory;  //pseudo SIC memory
-    int status;
+    int status;     //status code
     vector<int> starting_address_of_memory_blocks;  //the memory block: [starting, ending)
     vector<int> ending_address_of_memory_blocks;
     int starting_address;   //should be 0
+    int transfer_address;
     int inputLength;
-    string name;
+    string program_name;
     string inFileName;
     void processTextRecord(string);   //process a line
     void processModificationRecord(string);   //process a line
 };
+
+template <typename T>   //this function is imported from https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c
+string int2hexStr(T w, size_t hex_len = sizeof(T)<<1){
+    static const char* digits = "0123456789ABCDEF";
+    string rc(hex_len,'0');
+    for (size_t i=0, j=(hex_len-1)*4 ; i<hex_len; ++i,j-=4)
+        rc[i] = digits[(w>>j) & 0x0f];
+    return rc;
+}
 
 int main()
 {
@@ -75,12 +85,12 @@ bool relocatingLoader::load(){
         inFile.close();
         return false;
     }
-    name = record.substr(1,6);
+    program_name = record.substr(1,6);
     starting_address = stoi(record.substr(7,6), nullptr, 16);
-    inputLength = stoi(record.substr(13,6), nullptr, 16);
+    //inputLength = stoi(record.substr(13,6), nullptr, 16);
     /*--- end process first line ---*/
 
-    memory.resize(MEMORYSIZE, '.');  //unsure
+    memory.resize(MEMORYSIZE, '.');
 
     while(getline(inFile, record)){
         recordType = record.at(0);
@@ -96,8 +106,7 @@ bool relocatingLoader::load(){
             return false;
         }
     }
-    
-    //last line of memory bytes
+    transfer_address = stoi(record.substr(1,6), nullptr, 16);
     inFile.close();
     return true;
 }
@@ -111,7 +120,7 @@ bool relocatingLoader::generate_DEVF2(){
         status = 4;
         return false;
     }
-    outFile<< 'I' << name << starting_address <<endl;   //<< size and transfer address //int to hex string
+    outFile<< 'I' << program_name << int2hexStr<int>(starting_address, 6) <<endl;   //<< size and transfer address //int to hex string
     
     counter = 0;
     for(it=memory.begin(); it!=memory.end(); it++){
@@ -128,12 +137,12 @@ bool relocatingLoader::generate_DEVF2(){
     outFile.close();
     return true;
 }
-
+ 
 void relocatingLoader::processTextRecord(string record){
-    int i, hexIndex, flag, start, bytesNum;
+    int i, flag, start, bytesNum;
     start = stoi(record.substr(1,6), nullptr, 16);
     bytesNum = stoi(record.substr(7,2), nullptr, 16);
-    cout<< "start: "<<start<<" bytesNum: "<<bytesNum<<endl;     //for debug
+    //cout<< "start: "<<start<<" bytesNum: "<<bytesNum<<endl;     //for debug
 
     //if it is a new block, flag=0; else, flag=1;
     flag = 0;
@@ -151,22 +160,13 @@ void relocatingLoader::processTextRecord(string record){
     }
     
     for(i=0; i<bytesNum; i++){
-        hexIndex = 2*i;
-        memory[start+hexIndex] = record.at(9+hexIndex);
-        hexIndex++;
-        memory[start+hexIndex] = record.at(9+hexIndex);
+        /*notice that unit of start and bytesNum is byte, however unit of memory and record is half-byte*/
+        memory[2*(start+i)] = record.at(9+i*2);
+        memory[2*(start+i)+1] = record.at(10+i*2);
     }
-    cout<<memory.at(30)<<memory.at(31)<<endl;  //for debug
+    //cout<<memory.at(30)<<memory.at(31)<<endl;  //for debug
 }
 
 void relocatingLoader::processModificationRecord(string record){
     ;
 }
-
-// template <typename T >
-// string int_to_hex(T inputData)
-// {
-//     stringstream strstream;
-//     stream<< "0x"<< std::setfill ('0') << std::setw(sizeof(T)*2)<< std::hex << inputData;
-//     return stream.str();
-// }
