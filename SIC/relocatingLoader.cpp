@@ -2,6 +2,7 @@
 #include<fstream>
 #include<string>
 #include<vector>
+#include<random>
 using namespace std;
 
 #define MEMORYSIZE 32768
@@ -27,11 +28,12 @@ private:
     int status;     //status code
     vector<int> starting_address_of_memory_blocks;  //the memory block: [starting, ending)
     vector<int> ending_address_of_memory_blocks;
-    int starting_address;   //should be 0
+    int actual_beginning_address;
     int transfer_address;
-    int inputLength;
+    int objLength;
     string program_name;
     string inFileName;
+    void generate_random_beginning();
     void processTextRecord(string);   //process a line
     void processModificationRecord(string);   //process a line
 };
@@ -86,10 +88,11 @@ bool relocatingLoader::load(){
         return false;
     }
     program_name = record.substr(1,6);
-    starting_address = stoi(record.substr(7,6), nullptr, 16);
-    //inputLength = stoi(record.substr(13,6), nullptr, 16);
+    //starting_address = stoi(record.substr(7,6), nullptr, 16);
+    objLength = stoi(record.substr(13,6), nullptr, 16);
     /*--- end process first line ---*/
 
+    generate_random_beginning();
     memory.resize(MEMORYSIZE, '.');
 
     while(getline(inFile, record)){
@@ -120,7 +123,7 @@ bool relocatingLoader::generate_DEVF2(){
         status = 4;
         return false;
     }
-    outFile<< 'I' << program_name << int2hexStr<int>(starting_address, 6) <<endl;   //<< size and transfer address //int to hex string
+    outFile<< 'I' << program_name << int2hexStr<int>(actual_beginning_address, 6) <<endl;   //<< size and transfer address //int to hex string
     
     counter = 0;
     for(it=memory.begin(); it!=memory.end(); it++){
@@ -137,6 +140,13 @@ bool relocatingLoader::generate_DEVF2(){
     outFile.close();
     return true;
 }
+
+void relocatingLoader::generate_random_beginning(){
+    random_device rd;
+    default_random_engine generator(rd());
+    uniform_int_distribution<int> UNI(128, MEMORYSIZE/2-objLength);    //unsure //byte vs. half-byte
+    actual_beginning_address = UNI(generator);
+}
  
 void relocatingLoader::processTextRecord(string record){
     int i, flag, start, bytesNum;
@@ -147,7 +157,7 @@ void relocatingLoader::processTextRecord(string record){
     //if it is a new block, flag=0; else, flag=1;
     flag = 0;
     for(i=0; i<starting_address_of_memory_blocks.size(); i++){
-        if(start == ending_address_of_memory_blocks.at(i)){
+        if(actual_beginning_address+start == ending_address_of_memory_blocks.at(i)){
             flag = 1;
             break;
         }
@@ -155,18 +165,34 @@ void relocatingLoader::processTextRecord(string record){
     if(flag)
         ending_address_of_memory_blocks.at(i)+= bytesNum;
     else{   //this is a new memory block
-        starting_address_of_memory_blocks.push_back(start);
-        ending_address_of_memory_blocks.push_back(start+bytesNum);
+        starting_address_of_memory_blocks.push_back(actual_beginning_address+start);
+        ending_address_of_memory_blocks.push_back(actual_beginning_address+start+bytesNum);
     }
     
     for(i=0; i<bytesNum; i++){
-        /*notice that unit of start and bytesNum is byte, however unit of memory and record is half-byte*/
-        memory[2*(start+i)] = record.at(9+i*2);
-        memory[2*(start+i)+1] = record.at(10+i*2);
+        /*notice that unit of start, bytesNum and addresses is byte, however unit of memory and record is half-byte*/
+        memory[2*(actual_beginning_address+start+i)] = record.at(9+i*2);
+        memory[2*(actual_beginning_address+start+i)+1] = record.at(10+i*2);
     }
     //cout<<memory.at(30)<<memory.at(31)<<endl;  //for debug
 }
 
 void relocatingLoader::processModificationRecord(string record){
-    ;
+    int i, j, location, hexLength, targetValue;
+    string str;
+    location = stoi(record.substr(1,6), nullptr, 16);   //unit: byte
+    hexLength = stoi(record.substr(7,2), nullptr, 16);
+    location = 2*(actual_beginning_address+location);   //index of hex digit in memory
+    str = memory.substr(location+(hexLength|1), hexLength);
+    cout<<str<<endl;  //for debug
+    targetValue = stoi(str, nullptr, 16);
+    targetValue+= actual_beginning_address;
+    str = int2hexStr<int>(targetValue, hexLength);
+    j = 0;
+    if(hexLength|1)
+        for(i=location+1; i<=location+hexLength; ++i)
+            memory[i] = str[j++];
+    else
+        for(i=location; i<=location+hexLength-1; ++i)
+            memory[i] = str[j++];
 }
