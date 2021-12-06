@@ -12,6 +12,7 @@ U | char32_t
 L | wchar_t
 u8 | char (utf8, for string only)
 
+`*&` is a reference to a pointer
 
 
 
