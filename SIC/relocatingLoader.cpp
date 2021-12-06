@@ -3,9 +3,11 @@
 #include<string>
 #include<vector>
 #include<random>
+#include<chrono>
 using namespace std;
 
-#define MEMORYSIZE 32768
+#define MEMORYSIZE 32768*2  //32768 bytes, 32768*2 hex digits
+#define BOOTSIZE 256*2      //assume that the first 256 bytes will be occupied by boot ROM and BIOS
 
 /*
 status code descriptions:
@@ -33,7 +35,8 @@ private:
     int objLength;
     string program_name;
     string inFileName;
-    void generate_random_beginning();
+    void paddingMemory();   //to simulate the memory situation
+    void random_generate_beginning_address();
     void processTextRecord(string);   //process a line
     void processModificationRecord(string);   //process a line
 };
@@ -92,8 +95,9 @@ bool relocatingLoader::load(){
     objLength = stoi(record.substr(13,6), nullptr, 16);
     /*--- end process first line ---*/
 
-    generate_random_beginning();
+    random_generate_beginning_address();
     memory.resize(MEMORYSIZE, '.');
+    paddingMemory();
 
     while(getline(inFile, record)){
         recordType = record.at(0);
@@ -141,10 +145,20 @@ bool relocatingLoader::generate_DEVF2(){
     return true;
 }
 
-void relocatingLoader::generate_random_beginning(){
-    random_device rd;
-    default_random_engine generator(rd());
-    uniform_int_distribution<int> UNI(128, MEMORYSIZE/2-objLength);    //unsure //byte vs. half-byte
+void relocatingLoader::paddingMemory(){
+    char hex[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+    auto seed = chrono::system_clock::now().time_since_epoch().count();
+    default_random_engine generator(seed);
+    uniform_int_distribution<int> UNI(0,15);
+    for(int i=0; i<MEMORYSIZE; ++i)
+        memory[i] = hex[UNI(generator)];
+}
+
+void relocatingLoader::random_generate_beginning_address(){
+    auto seed = chrono::system_clock::now().time_since_epoch().count();
+    default_random_engine generator(seed);
+    //cout<<"value of generator is "<<generator<<endl;    //for test
+    uniform_int_distribution<int> UNI(BOOTSIZE/2+1, MEMORYSIZE/2-objLength);    //unsure
     actual_beginning_address = UNI(generator);
 }
  
@@ -183,13 +197,13 @@ void relocatingLoader::processModificationRecord(string record){
     location = stoi(record.substr(1,6), nullptr, 16);   //unit: byte
     hexLength = stoi(record.substr(7,2), nullptr, 16);
     location = 2*(actual_beginning_address+location);   //index of hex digit in memory
-    str = memory.substr(location+(hexLength|1), hexLength);
-    cout<<str<<endl;  //for debug
+    str = memory.substr(location+(hexLength&1), hexLength);
+    //cout<<str<<endl;  //for debug
     targetValue = stoi(str, nullptr, 16);
     targetValue+= actual_beginning_address;
     str = int2hexStr<int>(targetValue, hexLength);
     j = 0;
-    if(hexLength|1)
+    if(hexLength&1)
         for(i=location+1; i<=location+hexLength; ++i)
             memory[i] = str[j++];
     else
