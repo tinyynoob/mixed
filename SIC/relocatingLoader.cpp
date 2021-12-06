@@ -30,15 +30,16 @@ private:
     int status;     //status code
     vector<int> starting_address_of_memory_blocks;  //the memory block: [starting, ending)
     vector<int> ending_address_of_memory_blocks;
-    int actual_beginning_address;
+    int loading_offset;
+    int starting_address;
     int transfer_address;
     int objLength;
     string program_name;
     string inFileName;
-    void paddingMemory();   //to simulate the memory situation
-    void random_generate_beginning_address();
-    void processTextRecord(string);   //process a line
-    void processModificationRecord(string);   //process a line
+    void paddingMemory();   //to simulate the memory space
+    void random_generate_loading_offset();
+    void processTextRecord(string);   //process one line
+    void processModificationRecord(string);   //process one line
 };
 
 template <typename T>   //this function is imported from https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c
@@ -55,7 +56,7 @@ int main()
     relocatingLoader *RL;
     RL = new relocatingLoader("objectCode.OBJ");
     RL->load();
-    cout<<"end load()"<<endl;   //for debug
+    //cout<<"end load()"<<endl;   //for debug
     RL->generate_DEVF2();
     cout<< "status code: "<<RL->getStatus()<<endl;
     delete RL;
@@ -66,6 +67,8 @@ int main()
 relocatingLoader::relocatingLoader(string inFileName){
     status = 0;
     this->inFileName = inFileName;
+    memory.resize(MEMORYSIZE, '.');
+    paddingMemory();    //memory simulation
 }
 
 relocatingLoader::~relocatingLoader(){
@@ -76,7 +79,6 @@ relocatingLoader::~relocatingLoader(){
 bool relocatingLoader::load(){
     fstream inFile;
     string record;
-    char recordType;
 
     inFile.open(inFileName, ios::in);
     if(!inFile.is_open()){
@@ -91,14 +93,16 @@ bool relocatingLoader::load(){
         return false;
     }
     program_name = record.substr(1,6);
-    //starting_address = stoi(record.substr(7,6), nullptr, 16);
+    starting_address = stoi(record.substr(7,6), nullptr, 16);
     objLength = stoi(record.substr(13,6), nullptr, 16);
     /*--- end process first line ---*/
 
-    random_generate_beginning_address();
-    memory.resize(MEMORYSIZE, '.');
-    paddingMemory();
+    if(starting_address)    //check out whether a relocation is needed
+        loading_offset = 0;
+    else
+        random_generate_loading_offset();
 
+    char recordType;
     while(getline(inFile, record)){
         recordType = record.at(0);
         if(recordType == 'T')
@@ -114,31 +118,32 @@ bool relocatingLoader::load(){
         }
     }
     transfer_address = stoi(record.substr(1,6), nullptr, 16);
+    if(!transfer_address)
+        transfer_address = starting_address_of_memory_blocks.at(0);
     inFile.close();
     return true;
 }
 
 bool relocatingLoader::generate_DEVF2(){
-    int counter;
-    string::iterator it;
     fstream outFile;
     outFile.open("DEVF2", ios::out | ios::trunc);
     if(!outFile.is_open()){
         status = 4;
         return false;
     }
-    outFile<< 'I' << program_name << int2hexStr<int>(actual_beginning_address, 6) <<endl;   //<< size and transfer address //int to hex string
-    
-    counter = 0;
-    for(it=memory.begin(); it!=memory.end(); it++){
-        outFile<<*it;
+    int output_starting_address = (starting_address_of_memory_blocks.at(0)/32)*32; //this is byte
+    int size = ending_address_of_memory_blocks.at(ending_address_of_memory_blocks.size()-1) - output_starting_address;   //need fix
+    outFile<< 'I' << program_name << int2hexStr<int>(output_starting_address, 6)
+        << int2hexStr<int>(size, 6) << int2hexStr<int>(transfer_address, 6) <<endl;
+    int counter = 0;
+    for(int i=output_starting_address; i<output_starting_address+size; ++i){
+        outFile<<memory[i*2];
+        outFile<<memory[i*2+1];
         counter++;
-        if(counter%64 == 0){
+        if(counter%32 == 0){
             outFile<<endl;
             counter = 0;
         }
-        else if(counter%8 == 0)
-            outFile<<' ';
     }
     //output last line
     outFile.close();
@@ -146,20 +151,20 @@ bool relocatingLoader::generate_DEVF2(){
 }
 
 void relocatingLoader::paddingMemory(){
-    char hex[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
     auto seed = chrono::system_clock::now().time_since_epoch().count();
     default_random_engine generator(seed);
     uniform_int_distribution<int> UNI(0,15);
+    const char* hex = "0123456789ABCDEF";
     for(int i=0; i<MEMORYSIZE; ++i)
         memory[i] = hex[UNI(generator)];
 }
 
-void relocatingLoader::random_generate_beginning_address(){
+void relocatingLoader::random_generate_loading_offset(){
     auto seed = chrono::system_clock::now().time_since_epoch().count();
     default_random_engine generator(seed);
     //cout<<"value of generator is "<<generator<<endl;    //for test
-    uniform_int_distribution<int> UNI(BOOTSIZE/2+1, MEMORYSIZE/2-objLength);    //unsure
-    actual_beginning_address = UNI(generator);
+    uniform_int_distribution<int> UNI(BOOTSIZE/2+1, MEMORYSIZE/2-objLength);
+    loading_offset = UNI(generator);
 }
  
 void relocatingLoader::processTextRecord(string record){
@@ -171,7 +176,7 @@ void relocatingLoader::processTextRecord(string record){
     //if it is a new block, flag=0; else, flag=1;
     flag = 0;
     for(i=0; i<starting_address_of_memory_blocks.size(); i++){
-        if(actual_beginning_address+start == ending_address_of_memory_blocks.at(i)){
+        if(loading_offset+start == ending_address_of_memory_blocks.at(i)){
             flag = 1;
             break;
         }
@@ -179,14 +184,14 @@ void relocatingLoader::processTextRecord(string record){
     if(flag)
         ending_address_of_memory_blocks.at(i)+= bytesNum;
     else{   //this is a new memory block
-        starting_address_of_memory_blocks.push_back(actual_beginning_address+start);
-        ending_address_of_memory_blocks.push_back(actual_beginning_address+start+bytesNum);
+        starting_address_of_memory_blocks.push_back(loading_offset+start);
+        ending_address_of_memory_blocks.push_back(loading_offset+start+bytesNum);
     }
     
     for(i=0; i<bytesNum; i++){
         /*notice that unit of start, bytesNum and addresses is byte, however unit of memory and record is half-byte*/
-        memory[2*(actual_beginning_address+start+i)] = record.at(9+i*2);
-        memory[2*(actual_beginning_address+start+i)+1] = record.at(10+i*2);
+        memory[2*(loading_offset+start+i)] = record.at(9+i*2);
+        memory[2*(loading_offset+start+i)+1] = record.at(10+i*2);
     }
     //cout<<memory.at(30)<<memory.at(31)<<endl;  //for debug
 }
@@ -196,11 +201,11 @@ void relocatingLoader::processModificationRecord(string record){
     string str;
     location = stoi(record.substr(1,6), nullptr, 16);   //unit: byte
     hexLength = stoi(record.substr(7,2), nullptr, 16);
-    location = 2*(actual_beginning_address+location);   //index of hex digit in memory
+    location = 2*(loading_offset+location);   //index of hex digit in memory
     str = memory.substr(location+(hexLength&1), hexLength);
     //cout<<str<<endl;  //for debug
     targetValue = stoi(str, nullptr, 16);
-    targetValue+= actual_beginning_address;
+    targetValue+= loading_offset;
     str = int2hexStr<int>(targetValue, hexLength);
     j = 0;
     if(hexLength&1)
