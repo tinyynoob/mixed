@@ -20,8 +20,7 @@ status code descriptions:
 class relocatingLoader
 {
 public:
-    relocatingLoader(string);   //input file name
-    ~relocatingLoader();
+    relocatingLoader(string);   //name of the input object program as parameter
     bool load();
     bool generate_DEVF2();
     int getStatus(){ return status;};
@@ -54,13 +53,13 @@ string int2hexStr(T w, size_t hex_len = sizeof(T)<<1){
 int main()
 {
     relocatingLoader *RL;
-    RL = new relocatingLoader("objectCode.OBJ");
-    RL->load();
-    //cout<<"end load()"<<endl;   //for debug
-    RL->generate_DEVF2();
+    RL = new relocatingLoader("SRCFILE.OBJ");
+    if(RL->load()){
+        if(RL->generate_DEVF2())
+            ;
+    }
     cout<< "status code: "<<RL->getStatus()<<endl;
     delete RL;
-    system("pause");
     return 0;
 }
 
@@ -69,11 +68,6 @@ relocatingLoader::relocatingLoader(string inFileName){
     this->inFileName = inFileName;
     memory.resize(MEMORYSIZE, '.');
     paddingMemory();    //memory simulation
-}
-
-relocatingLoader::~relocatingLoader(){
-    starting_address_of_memory_blocks.clear();
-    ending_address_of_memory_blocks.clear();
 }
 
 bool relocatingLoader::load(){
@@ -118,8 +112,7 @@ bool relocatingLoader::load(){
         }
     }
     transfer_address = stoi(record.substr(1,6), nullptr, 16);
-    if(!transfer_address)
-        transfer_address = starting_address_of_memory_blocks.at(0);
+
     inFile.close();
     return true;
 }
@@ -132,9 +125,11 @@ bool relocatingLoader::generate_DEVF2(){
         return false;
     }
     int output_starting_address = (starting_address_of_memory_blocks.at(0)/32)*32; //this is byte
-    int size = ending_address_of_memory_blocks.at(ending_address_of_memory_blocks.size()-1) - output_starting_address;   //need fix
+    int size = ending_address_of_memory_blocks.back() - output_starting_address;   //need fix
+    int output_transfer_address = starting_address_of_memory_blocks.at(0);
     outFile<< 'I' << program_name << int2hexStr<int>(output_starting_address, 6)
-        << int2hexStr<int>(size, 6) << int2hexStr<int>(transfer_address, 6) <<endl;
+        << int2hexStr<int>(size, 6) << int2hexStr<int>(output_transfer_address, 6) <<endl;
+    
     int counter = 0;
     for(int i=output_starting_address; i<output_starting_address+size; ++i){
         outFile<<memory[i*2];
@@ -193,7 +188,6 @@ void relocatingLoader::processTextRecord(string record){
         memory[2*(loading_offset+start+i)] = record.at(9+i*2);
         memory[2*(loading_offset+start+i)+1] = record.at(10+i*2);
     }
-    //cout<<memory.at(30)<<memory.at(31)<<endl;  //for debug
 }
 
 void relocatingLoader::processModificationRecord(string record){
