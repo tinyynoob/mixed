@@ -6,24 +6,16 @@
 #include<chrono>
 using namespace std;
 
-#define MEMORYSIZE 32768*2  //32768 bytes, 32768*2 hex digits
+#define MEMORYSIZE 10240*2  //10240 bytes, 10240*2 hex digits
 #define BOOTSIZE 256*2      //assume that the first 256 bytes will be occupied by boot ROM and BIOS
 
-/*
-status code descriptions:
-    0: all is well
-    1: could not open input file
-    2: some input failed
-    3: unknown record type
-    4: could not open DEVF2
-*/
 class relocatingLoader
 {
 public:
     relocatingLoader(string);   //name of the input object program as parameter
     bool load();
     bool generate_DEVF2();
-    int getStatus(){ return status;};
+    int statusLog();
 private:
     string memory;  //pseudo SIC memory
     int status;     //status code
@@ -58,7 +50,7 @@ int main()
         if(RL->generate_DEVF2())
             ;
     }
-    cout<< "status code: "<<RL->getStatus()<<endl;
+    RL->statusLog();
     delete RL;
     return 0;
 }
@@ -66,8 +58,22 @@ int main()
 relocatingLoader::relocatingLoader(string inFileName){
     status = 0;
     this->inFileName = inFileName;
-    memory.resize(MEMORYSIZE, '.');
+    memory.resize(MEMORYSIZE);
     paddingMemory();    //memory simulation
+}
+
+int relocatingLoader::statusLog(){
+    if(status == 0)
+        cout<<"Loading successed"<<endl;
+    else if(status == 1)
+        cout<<"Could not open input object program"<<endl;
+    else if(status == 2)
+        cout<<"Input failed"<<endl;
+    else if(status == 3)
+        cout<<"Unknown record type"<<endl;
+    else if(status == 4)
+        cout<<"Could not open DEVF2"<<endl;
+    return status;
 }
 
 bool relocatingLoader::load(){
@@ -125,8 +131,8 @@ bool relocatingLoader::generate_DEVF2(){
         return false;
     }
     int output_starting_address = (starting_address_of_memory_blocks.at(0)/32)*32; //this is byte
-    int size = ending_address_of_memory_blocks.back() - output_starting_address;   //need fix
-    int output_transfer_address = starting_address_of_memory_blocks.at(0);
+    int size = ending_address_of_memory_blocks.back() - output_starting_address;
+    int output_transfer_address = transfer_address + loading_offset;
     outFile<< 'I' << program_name << int2hexStr<int>(output_starting_address, 6)
         << int2hexStr<int>(size, 6) << int2hexStr<int>(output_transfer_address, 6) <<endl;
     
