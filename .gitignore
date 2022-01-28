@@ -1,5 +1,13 @@
 .vs
 
+c/*
+!c/*.c
+
+cpp/*
+!cpp/*.cpp
+!cpp/*.txt
+!cpp/*.dot
+
 #SIC
 !SIC/*.asm
 *.int
