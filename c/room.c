@@ -4,10 +4,10 @@
 struct interval {
     int left;
     int right;
-    int room;  // belongs to which room
+    int room;  // the interval belongs to which room
 };
 
-int overlap(struct interval above, struct interval below)
+static inline int overlap(struct interval above, struct interval below)
 {
     if (above.right <= below.left || above.left >= below.right)
         return 0;
@@ -17,7 +17,7 @@ int overlap(struct interval above, struct interval below)
 int main()
 {
     int row, column;
-    scanf("%d %d", &row, &column);
+    scanf("%d %d\n", &row, &column);
     // printf("%d, %d\n", row, column);
     const int max_inter =
         (column + 1) / 2;  // max possible number of interval in a single line
@@ -27,7 +27,7 @@ int main()
     int index = -1;                  // indicates index of this[]
     for (int r = 0; r < row; r++) {  // scan through lines
         /* updates above */
-        int above_inter_num = index + 1;
+        const int above_inter_num = index + 1;
         for (int i = 0; i < above_inter_num; i++) {
             above[i].left = this[i].left;
             above[i].right = this[i].right;
@@ -35,13 +35,14 @@ int main()
         }
         index = -1;  // reset index
 
-        /* read loop */
+        /* loop for reading and processing a line */
         int c = 0;
-        while (c < column) {
-            char input = getchar();
+        while (c < column + 1) {    // +1 to include '\n'
+            int input = getchar();  // declare as int to contain EOF
             switch (input) {
             case '#':
             case '\n':
+            case EOF:
                 c++;
                 break;
             case '.':
@@ -49,7 +50,7 @@ int main()
                 this[index].left = c++;
                 while ((input = getchar()) == '.')
                     c++;
-                // @input is either '\n' or '#'
+                // @input is currently either '\n' or '#'
                 this[index].right = c++;
 
                 this[index].room = -1;
@@ -58,7 +59,7 @@ int main()
                                 this[index])) {  // it belongs to an old room
                         if (this[index].room == -1) {
                             this[index].room = above[i].room;
-                        } else {
+                        } else if (above[i].room != above[i - 1].room) {
                             above[i].room =
                                 above[i - 1].room;  // merge two old rooms
                             ans--;
@@ -75,7 +76,7 @@ int main()
                 return 1;
             }
         }
-        printf("ans = %d after processing row %d\n", ans, r);
+        // printf("ans = %d after processing row %d\n", ans, r);
     }
     printf("%d\n", ans);
     return 0;
