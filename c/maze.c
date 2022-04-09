@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
+/* bitwise, branchless solution */
 int main()
 {
     int row, column;
@@ -15,22 +16,21 @@ int main()
     for (int i = 0; i < row + 2; i++)
         matrix[i] =
             (unsigned char *) malloc(sizeof(unsigned char) * (column + 2));
-    /* If we surround the matrix by walls, then there is no special case, that
-     * is, we do not have to check array exceeding.
-     * The +1 below are due to the bound we pad.
+    /* If we add one layer of extra wall to surround the matrix, then there is
+     * no special case, that is, we can traverse in there without exceeding the
+     * array. The +1 below are due to the left and top bound we pad.
      */
-    int color = -1;  // indicate black/white (chessboard) at source
+    int color = -1;  // indicate black/white (chessboard)
     /* read map */
     for (int r = 0; r < row; r++) {
         for (int c = 0; c < column + 1; c++) {
             /* matrix value:
              * 0: wall
              * 1: have not been visited
-             * 2,3: being visited, 2 is source
-             * 4,7,6: have been visited, 6 is source
+             * 2: being visited
+             * 4: have been visited
              * 8: destination
              * 16: achieved dest
-             * Think these numbers in binary.
              */
             int get = getchar();
             switch (get) {
@@ -45,6 +45,7 @@ int main()
                 break;
             case 'A':
                 matrix[r + 1][c + 1] = 2;
+                /* init color according to position of source */
                 color = (r ^ c) & 1;  // = ((r+1) ^ (c+1)) & 1
                 break;
             case 'B':
@@ -103,13 +104,14 @@ int main()
                                 ((uint32_t) matrix[r][c + 1] << 16) |
                                 ((uint32_t) matrix[r - 1][c] << 8) |
                                 ((uint32_t) matrix[r + 1][c]);
-                swar |= (swar & 0x09090909u) << shift;
+                swar = ((swar & 0x09090909u) << shift) | (swar & ~0x09090909u);
                 matrix[r][c - 1] = swar >> 24;
                 matrix[r][c + 1] = swar >> 16;
                 matrix[r - 1][c] = swar >> 8;
                 matrix[r + 1][c] = swar;
                 /* me: visiting => visited */
-                matrix[r][c] |= (matrix[r][c] & 2u) << shift;
+                matrix[r][c] =
+                    ((matrix[r][c] & 2u) << shift) | (matrix[r][c] & ~2u);
                 /* update pioneer and achieve */
                 pioneer |= swar & 0x02020202u;
                 achieve |= swar & 0x10101010u;
