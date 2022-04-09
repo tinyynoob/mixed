@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,12 +10,11 @@ int main()
     scanf("%d %d\n", &row, &column);
 
     /* ignore failure check after malloc() */
-    /* note that short type has at least 16 bits */
-    unsigned short **matrix =
-        (unsigned short **) malloc(sizeof(unsigned short *) * (row + 2));
+    unsigned char **matrix =
+        (unsigned char **) malloc(sizeof(unsigned char *) * (row + 2));
     for (int i = 0; i < row + 2; i++)
         matrix[i] =
-            (unsigned short *) malloc(sizeof(unsigned short) * (column + 2));
+            (unsigned char *) malloc(sizeof(unsigned char) * (column + 2));
     /* If we surround the matrix by walls, then there is no special case, that
      * is, we do not have to check array exceeding.
      * The +1 below are due to the bound we pad.
@@ -26,9 +26,11 @@ int main()
             /* matrix value:
              * 0: wall
              * 1: have not been visited
-             * 2,3: being visited
+             * 2,3: being visited, 2 is source
              * 4,7,6: have been visited, 6 is source
              * 8: destination
+             * 16: achieved dest
+             * Think these numbers in binary.
              */
             int get = getchar();
             switch (get) {
@@ -67,15 +69,15 @@ int main()
     }
 
     unsigned long long round = 0;
-    int pioneer = 1;  // if a new place is visited
-    int achieve = 0;  // if the destination B is achieved
+    uint32_t pioneer = 1;  // if a new place is visited
+    uint32_t achieve = 0;  // if the destination B is achieved
     /*--- spreading ---*/
     while (pioneer && !achieve) {
 #if DEBUG
         printf("\nAt begining of round: %llu\n", round);
         for (int i = 0; i < row + 2; i++) {
             for (int j = 0; j < column + 2; j++)
-                printf("%hu", matrix[i][j]);
+                printf("%u", (unsigned) matrix[i][j]);
             putchar('\n');
         }
 #endif
@@ -92,27 +94,29 @@ int main()
                  * If I am in visiting state, shift = 1
                  * Otherwise, shift = 0
                  */
-                const unsigned short shift = (matrix[r][c] & 2) >> 1;
+                const unsigned shift = (matrix[r][c] & 2u) >> 1;
                 /* If I am in visiting state,
                  * my neightbors: not visited => visiting
                  *                destination => 16
                  */
-                matrix[r][c - 1] |= (matrix[r][c - 1] & 0x9) << shift;
-                matrix[r][c + 1] |= (matrix[r][c + 1] & 0x9) << shift;
-                matrix[r - 1][c] |= (matrix[r - 1][c] & 0x9) << shift;
-                matrix[r + 1][c] |= (matrix[r + 1][c] & 0x9) << shift;
+                uint32_t swar = ((uint32_t) matrix[r][c - 1] << 24) |
+                                ((uint32_t) matrix[r][c + 1] << 16) |
+                                ((uint32_t) matrix[r - 1][c] << 8) |
+                                ((uint32_t) matrix[r + 1][c]);
+                swar |= (swar & 0x09090909u) << shift;
+                matrix[r][c - 1] = swar >> 24;
+                matrix[r][c + 1] = swar >> 16;
+                matrix[r - 1][c] = swar >> 8;
+                matrix[r + 1][c] = swar;
                 /* me: visiting => visited */
-                matrix[r][c] |= (matrix[r][c] & 2) << shift;
+                matrix[r][c] |= (matrix[r][c] & 2u) << shift;
                 /* update pioneer and achieve */
-                pioneer |= matrix[r][c - 1] & 2;
-                pioneer |= matrix[r][c + 1] & 2;
-                pioneer |= matrix[r - 1][c] & 2;
-                pioneer |= matrix[r + 1][c] & 2;
-                achieve |= matrix[r][c - 1] & 16;
-                achieve |= matrix[r][c + 1] & 16;
-                achieve |= matrix[r - 1][c] & 16;
-                achieve |= matrix[r + 1][c] & 16;
+                pioneer |= swar & 0x02020202u;
+                achieve |= swar & 0x10101010u;
             }
+#if DEBUG
+            printf("pioneer = %d,\n", pioneer);
+#endif
         }
         round++;
         /* switch to another color */
