@@ -8,6 +8,10 @@ maze: maze.c
 	clang-format -i maze.c
 	$(cc) -o $@ $^
 
+mazeO2: maze.c
+	clang-format -i maze.c
+	$(cc) -O2 -o $@ $^
+
 clean:
 	rm fibonacci_tree fibonacci_tree.dot
 	rm maze
