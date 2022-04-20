@@ -1,9 +1,8 @@
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 struct course {
     int id;
@@ -20,19 +19,18 @@ int main()
         (struct course **) malloc(num * sizeof(struct course));
     int *ntable = (int *) malloc(num * sizeof(int));
     int *ptable = (int *) malloc(num * sizeof(int));
+#if DEBUG
+    puts("==========================");
+#endif
     for (int i = 0; i < num; i++) {
         index[i] = (struct course *) malloc(sizeof(struct course));
         if (!index[i])
             ;
-        scanf("%d ", &index[i]->id);
-        scanf("%d ", &ntable[i]);
-        scanf("%d ", &ptable[i]);
+        scanf("%d %d %d ", &index[i]->id, &ntable[i], &ptable[i]);
         index[i]->name = (char *) calloc(sizeof(char), 50);
         fgets(index[i]->name, 49, stdin);
-#if DEBUG
-        puts("==========================");
-#endif
         for (int j = 49; j >= 0; j--) {
+            // eliminate the '\n'
             if (index[i]->name[j] == '\n') {
                 index[i]->name[j] = '\0';
                 break;
@@ -45,6 +43,8 @@ int main()
                ntable[i], ptable[i], index[i]->name);
 #endif
     }
+
+    /* can be improved by hash */
     for (int i = 0; i < num; i++) {
         /* @flag:
          * 0: not finish
@@ -71,10 +71,13 @@ int main()
         printf("id: %d, flag: %d\n", index[i]->id, flag);
 #endif
     }
+    free(ntable);
+    free(ptable);
 
     struct course *head = index[0];
 #if DEBUG
     puts("==========================");
+    // assume the forwarding direction is connected
     struct course *DEBUG_it = head;
     puts("The forward lists:");
     for (int i = 0; i < num; i++) {
@@ -90,10 +93,8 @@ int main()
     puts("==========================");
 #endif
     free(index);
-    free(ntable);
-    free(ptable);
 
-    struct course *current = head;
+    const struct course *current = head;
     while (1) {
         printf("Current Course: %s\n", current->name);
         printf("[n] Next course. [p] Prior course [q] Quit:");
@@ -119,6 +120,7 @@ int main()
         }
         getchar();  // to discard '\n'
     }
+
 end:
     // assume they are well-connected
     for (int i = 0; i < num; i++) {
