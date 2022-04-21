@@ -7,6 +7,7 @@
 !/**/
 !Makefile
 !*.c
+!*.h
 !*.cpp
 !*.asm
 !*.sh
