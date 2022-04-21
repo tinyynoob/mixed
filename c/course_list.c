@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <stdbool.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 struct course {
     int id;
@@ -11,10 +13,70 @@ struct course {
     struct course *prior;
 };
 
+struct queue {
+    int id;
+    struct queue *next;
+};
+
+struct hash {
+    unsigned size;
+    int *map;
+};
+
+struct hash *hash_init(unsigned size)
+{
+    if (!size)
+        return NULL;
+    struct hash *h = (struct hash *) malloc(sizeof(struct hash));
+    h->size = size;
+    h->map = (int *) malloc(sizeof(int) * size);
+    for (int i = 0; i < size; i++)
+        h->map[i] = INT_MIN;
+    return h;
+}
+
+void hash_deinit(struct hash *h)
+{
+    free(h->map);
+    free(h);
+}
+
+void hash_add(struct hash *h, int key)
+{
+    int index = key % h->size;
+    /* linear probe */
+    while (h->map[index] != INT_MIN)
+        index = (index+1)%(h->size);
+    h->map[index] = key;
+}
+
+/* if found, return in @value */
+bool hash_find(struct hash *h, int key, int *value)
+{
+    int index = key % h->size;
+    while (h->map[index] != INT_MIN) {
+        if(h->map[index] == key) {
+            value = NULL;   // TODO
+            return true;   
+        }
+        index = (index + 1) % (h->size);
+    }
+    return false;
+}
+
+
+
 int main()
 {
     int num;
     scanf("%d ", &num);
+    struct hash *myHash = hash_init(num << 1);
+    struct course *head = NULL;
+    for (int i = 0; i < num; i++) {
+        struct course *new = (struct course *) malloc(sizeof(struct course));
+    }
+
+
     struct course **index =
         (struct course **) malloc(num * sizeof(struct course));
     int *ntable = (int *) malloc(num * sizeof(int));
@@ -82,14 +144,14 @@ int main()
     puts("The forward lists:");
     for (int i = 0; i < num; i++) {
         printf("%d  %s -> %d\n", DEBUG_it->id, DEBUG_it->name,
-               index[i]->next ? index[i]->next->id : -9999);
+               index[i]->next ? index[i]->next->id : INT_MIN);
         DEBUG_it = DEBUG_it->next;
     }
     putchar('\n');
     puts("The backward lists:");
     for (int i = num - 1; i >= 0; i--)
         printf("%d  %s -> %d\n", index[i]->id, index[i]->name,
-               index[i]->prior ? index[i]->prior->id : -9999);
+               index[i]->prior ? index[i]->prior->id : INT_MIN);
     puts("==========================");
 #endif
     free(index);
@@ -122,6 +184,7 @@ int main()
     }
 
 end:
+    hash_deinit(myHash);
     // assume they are well-connected
     for (int i = 0; i < num; i++) {
         struct course *tmp = head;
@@ -131,3 +194,4 @@ end:
     }
     return 0;
 }
+
