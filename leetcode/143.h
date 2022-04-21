@@ -5,31 +5,42 @@ struct ListNode {
     struct ListNode *next;
 };
 
-/* must contain at least 2 nodes */
-static inline struct ListNode *sep_tail(struct ListNode *head)
-{
-    while (head->next->next)
-        head = head->next;
-    struct ListNode *tmp = head->next;
-    head->next = NULL;
-    return tmp;
-}
-
 void reorderList(struct ListNode *head)
 {
     if (!head || !head->next)
         return;
-    struct ListNode *old = head;
-    struct ListNode **tail = &head;  // tail of ans
-    while (old) {
-        struct ListNode *next = old->next;
-        *tail = old;
-        tail = &(*tail)->next;
-        if (!next)  // odd number
-            break;
-        *tail = sep_tail(old);
-        tail = &(*tail)->next;
-        old = next;
+    struct ListNode *fast = head, *slow = head, *pre = NULL;
+    while (fast) {
+        fast = fast->next;
+        pre = slow;
+        slow = slow->next;
+        if (fast)
+            fast = fast->next;
     }
-    *tail = NULL;
+    pre->next = NULL;
+
+    /* reverse the backlist */
+    struct ListNode *backlist = slow;
+    struct ListNode *remain = backlist->next;
+    backlist->next = NULL;
+    while (remain) {
+        struct ListNode *tmp = remain->next;
+        remain->next = backlist;
+        backlist = remain;
+        remain = tmp;
+    }
+
+    /* merge forward and backward list */
+    struct ListNode **tail = &head;
+    struct ListNode *fit = head;    // forward iterator
+    while (backlist) {
+        *tail = fit;
+        tail = &(*tail)->next;
+        fit = fit->next;
+        *tail = backlist;
+        tail = &backlist->next;
+        backlist = backlist->next;
+    }
+    if (fit)    // odd
+        *tail = fit;
 }
