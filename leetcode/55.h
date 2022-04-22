@@ -1,21 +1,22 @@
 
 
-bool canJump(int* nums, int numsSize){
+bool canJump(int *nums, int numsSize)
+{
     if (numsSize == 1)
         return true;
-    int curr = 0;
+    int curr = 0, going = 1;
     while (nums[curr] != 0) {
-        int max = curr, mindex = curr;
-        for (int i = 1; i <= nums[curr]; i++) {
-            int sum = curr + i + nums[curr + i];
-            if (sum >= max) {   // move as far as it can
-                max = sum;
-                if (max >= (numsSize - 1))
+        int reachable = curr, rindex = curr;
+        for (; going <= curr + nums[curr]; going++) {
+            int sum = going + nums[going];
+            if (sum >= reachable) {  // move as far as it can
+                reachable = sum;
+                rindex = going;
+                if (reachable >= (numsSize - 1))
                     return true;
-                mindex = curr + i;
             }
         }
-        curr = mindex;
+        curr = rindex;
     }
     return false;
 }
