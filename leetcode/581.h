@@ -1,40 +1,61 @@
+//#include <stdio.h>
 
 
 int findUnsortedSubarray(int* nums, int numsSize)
 {
-    int left = -1, right = numsSize;    // interval (left, right)
-    int min_from_left = 0;  // index
-    for (int i = 0; i < numsSize; i++) {
-        int repeat = i;
-        int cut_flag = 0;   // lock update of repeat
-        for (int j = i + 1; j < numsSize; j++) {
-            if (nums[j] < nums[i]) {
-                min_from_left = j;
-                goto calcmax;
-            } else if (nums[j] == nums[i] && !cut_flag) {
-                repeat = j;
-            } else {
-                cut_flag = 1;
+    int stop_increasing = -1;   // from left to right
+    int min = nums[0];
+    for (int i = 1; i < numsSize; i++) {
+        if (nums[i] <= min)
+            min = nums[i];
+        if (nums[i] < nums[i - 1] && stop_increasing == -1)
+            stop_increasing = i;
+    }
+    //printf("stop_increasing is nums[%d] = %d\n", stop_increasing, nums[stop_increasing]);
+    if (stop_increasing == -1)
+        return 0;
+    int rmin = nums[stop_increasing];
+    for (int i = stop_increasing + 1; i < numsSize; i++) {
+        if (nums[i] < rmin)
+            rmin = nums[i];
+    }
+    int left = -1;
+    if (min == nums[0]) {
+        left = 0;
+        for (int i = stop_increasing - 1; i >= 0; i--) {
+            if (nums[i] <= rmin) {
+                left = i;
+                //printf("left = %d\n", left);
+                break;
             }
         }
-        left = repeat;
     }
-calcmax:;
-    int bound = left > min_from_left ? left : min_from_left;
-    for (int i = numsSize - 1; i > bound; i--) {
-        int repeat = i;
-        int cut_flag = 0;   // lock update of repeat
-        for (int j = i - 1; j >= 0; j--) {
-            if (nums[j] > nums[i])
-                goto ret;
-            else if (nums[j] == nums[i] && !cut_flag)
-                repeat = j;
-            else
-                cut_flag = 1;
+
+    int stop_decreasing = -1;   // from right to left
+    int max = nums[numsSize - 1];
+    for (int i = numsSize - 2; i >= 0; i--) {
+        if (nums[i] >= max)
+            max = nums[i];
+        if (nums[i] > nums[i + 1] && stop_decreasing == -1)
+            stop_decreasing = i;
+    }
+    //printf("stop_decreasing is nums[%d] = %d\n", stop_decreasing, nums[stop_decreasing]);
+    // stop_decreasing is impossible to be -1
+    int lmax = nums[stop_decreasing];
+    for (int i = stop_decreasing - 1; i >= 0; i--) {
+        if (nums[i] > lmax)
+            lmax = nums[i];
+    }
+    int right = numsSize;
+    if (max == nums[numsSize - 1]) {
+        right = numsSize - 1;
+        for (int i = stop_decreasing + 1; i < numsSize; i++) {
+            if (nums[i] >= lmax) {
+                right = i;
+                //printf("right = %d\n", right);
+                break;
+            }
         }
-        i = repeat;
-        right = repeat;
     }
-ret:;
     return right - left - 1;
 }
