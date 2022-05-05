@@ -1,121 +1,90 @@
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG 0
 
 /**
  * Note: The returned array must be malloced, assume caller calls free().
  */
 
-#define SIZE 231  // 231 = \binom{11}{3} + \binom{11}{2} + \binom{11}{1}
-
-struct split {
-    short dot[SIZE][3];  // record position of the dots
-    bool valid[SIZE];
-    int used;
+struct sep {
+    int start;
+    int width;  // \in \{1, 2, 3\}
 };
 
-/* try to split @s to @remain of 0~255 number
- *
+struct valid {
+    int width[4];
+    struct valid *next;
+};
+
+/* @pos \in \{0, 1, 2, 3\} is the current position. 
+ * 
  */
-static void insert_dots(struct split *sp, const char *s, int start, int remain)
+static void restore_ip(const char *s, struct sep *const record, struct valid **list, int pos)
 {
-    const char *mys = s + start;
-    const int parent = sp->used;
-#if DEBUG
-    if (parent == -1)  // no parent
-        puts("I am the first.");
-    else
-        printf("My parent is: [0] = %d, [1] = %d, [2] = %d\n",
-               sp->dot[parent][0], sp->dot[parent][1], sp->dot[parent][2]);
-#endif
-    if (remain == 0) {  // check validity of the address
-        if (mys[0] == '\0')
-            sp->valid[parent] = false;
-        else if (mys[0] == '0' && mys[1] != '\0')
-            sp->valid[parent] = false;
-        else if (strlen(mys) > 3)
-            sp->valid[parent] = false;
-        else if (atoi(mys) > 255)
-            sp->valid[parent] = false;
-        else
-            sp->valid[parent] = true;
+    if (pos == 4) {
+        // if it is valid, push to valid list and return
+        if (s[record[3].start + record[3].width] != '\0')   // digits remained
+            return;
+        struct valid *node = (struct valid *) malloc(sizeof(struct valid));
+        for (int i = 0; i < 4; i++)
+            node->width[i] = record[i].width;
+        node->next = *list;
+        *list = node;
         return;
     }
 
-    // remain \in \{1, 2, 3\}
-    int len = strlen(mys);
-    // consume 1 digit
-    if (len < 1)
+    if (pos == 0)
+        record[0].start = 0;
+    else
+        record[pos].start = record[pos - 1].start + record[pos - 1].width;
+
+    if (s[record[pos].start] == '\0')
         return;
-    sp->used++;
-    for (int i = 0; i < 3 - remain; i++)
-        sp->dot[sp->used][i] = sp->dot[parent][i];
-    sp->dot[sp->used][3 - remain] = start + 1;
-    sp->valid[sp->used] = false;
-    insert_dots(sp, s, start + 1, remain - 1);
-    // consume 2 digits
-    if (len < 2)
+    record[pos].width = 1;
+    restore_ip(s, record, list, pos + 1);
+    
+    if (s[record[pos].start + 1] == '\0')
         return;
-    if (mys[0] == '0')
+    record[pos].width = 2;
+    if (s[record[pos].start] == '0')    // first digit 0 is not valid
         return;
-    sp->used++;
-    for (int i = 0; i < 3 - remain; i++)
-        sp->dot[sp->used][i] = sp->dot[parent][i];
-    sp->dot[sp->used][3 - remain] = start + 2;
-    sp->valid[sp->used] = false;
-    insert_dots(sp, s, start + 2, remain - 1);
-    // consume 3 digits
-    if (len < 3)
+    restore_ip(s, record, list, pos + 1);
+    
+    if (s[record[pos].start + 2] == '\0')
         return;
-    char sub[4];
-    sub[0] = mys[0];
-    sub[1] = mys[1];
-    sub[2] = mys[2];
-    sub[3] = '\0';
-    if (atoi(sub) > 255)
+    record[pos].width = 3;
+    char numstr[4] = {s[record[pos].start], s[record[pos].start + 1], 
+                      s[record[pos].start + 2], '\0'};
+    int n = atoi(numstr);
+    if (n > 255)
         return;
-    sp->used++;
-    for (int i = 0; i < 3 - remain; i++)
-        sp->dot[sp->used][i] = sp->dot[parent][i];
-    sp->dot[sp->used][3 - remain] = start + 3;
-    sp->valid[sp->used] = false;
-    insert_dots(sp, s, start + 3, remain - 1);
+    restore_ip(s, record, list, pos + 1);
+    return;
 }
 
-char **restoreIpAddresses(char *s, int *returnSize)
+char **restoreIpAddresses(char *s, int* returnSize)
 {
+    struct sep record[4];
+    struct valid *list = NULL;
+    restore_ip((const char *) s, record, &list, 0);
     *returnSize = 0;
-    if (strlen(s) < 4)
-        return NULL;
-    struct split *sp = (struct split *) malloc(sizeof(struct split));
-    sp->used = -1;
-    insert_dots(sp, (const char *) s, 0, 3);
-    int valid_index[SIZE];
-    for (int i = 0; i <= sp->used; i++) {
-#if DEBUG
-        printf("i = %d, bool %d, *returnSize = %d\n", i, sp->valid[i],
-               *returnSize);
-#endif
-        if (sp->valid[i])
-            valid_index[(*returnSize)++] = i;
-    }
-    char **ans = (char **) malloc(sizeof(char *) * *returnSize);
+    for (struct valid *it = list; it; it = it->next)
+        (*returnSize)++;
+    char **ans = (char **) malloc(sizeof(char *) * (*returnSize));
     for (int i = 0; i < *returnSize; i++) {
         ans[i] = (char *) malloc(sizeof(char) * (strlen(s) + 3 + 1));
-        ans[i][sp->dot[valid_index[i]][0]] = '.';
-        ans[i][sp->dot[valid_index[i]][1] + 1] = '.';
-        ans[i][sp->dot[valid_index[i]][2] + 2] = '.';
-        ans[i][strlen(s) + 3] = '\0';
-        int index = 0;
-        for (int j = 0; j < strlen(s); j++) {
-            if (ans[i][index] == '.')
-                index++;
-            ans[i][index++] = s[j];
+        int sidx = 0, ansidx = 0;
+        for (int pos = 0; pos < 4; pos++) {
+            for (int j = 0; j < list->width[pos]; j++)
+                ans[i][ansidx++] = s[sidx++];
+            ans[i][ansidx++] = '.';
         }
+        ans[i][ansidx - 1] = '\0';
+        
+        struct valid *temp = list;
+        list = list->next;
+        free(temp);
     }
-    free(sp);
     return ans;
 }
