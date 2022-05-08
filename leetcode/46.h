@@ -15,28 +15,25 @@ struct perm {
     int **result;
     int res_used;
     int *seq;   // seq[i] \in [0, numsSize)
-    int checksum;   // \sum_i (seq[i] + 3) * (seq[i] + 3)
+    int checkxor;
 };
-/* The equation of checksum may be choosed better to prevent conflict with wrong results.
- *
- */
 
-static inline bool isValid(int *sequence, int seqSize, int checksum)
+static inline bool isValid(int *sequence, int seqSize, int checkxor)
 {
     for (int i = 0; i < seqSize; i++)
-        checksum -= (sequence[i] + 3) * (sequence[i] + 3);
-    return !checksum;
+        checkxor ^= 1 << sequence[i];
+    return !checkxor;
 }
 
 static void generate_permute(struct perm *p, int pos)
 {
     if (pos == p->numsSize) {   // end recursion
-        if (!isValid(p->seq, p->numsSize, p->checksum))
+        if (!isValid(p->seq, p->numsSize, p->checkxor))
             return;
         ++(p->res_used);
-        for (int j = 0; j < p->numsSize; j++)
-            printf("%d ", p->seq[j]);
-        printf("is the %d-th order\n", p->res_used);
+        // for (int j = 0; j < p->numsSize; j++)
+        //     printf("%d ", p->seq[j]);
+        // printf("is the %d-th order\n", p->res_used);
         for (int i = 0; i < p->numsSize; i++)
             p->result[p->res_used][i] = p->nums[p->seq[i]];
         return;
@@ -58,10 +55,10 @@ static struct perm *perm_init(int *nums, int numsSize, int resSize)
         p->result[i] = (int *) malloc(sizeof(int) * numsSize);
     p->res_used = -1;
     p->seq = (int *) malloc(sizeof(int) * numsSize);
-    p->checksum = 0;
+    p->checkxor = 0;
     for (int i = 0; i < numsSize; i++) {
         p->seq[i] = 0;
-        p->checksum += (i + 3) * (i + 3);
+        p->checkxor ^= 1 << i;
     }
     return p;
 }

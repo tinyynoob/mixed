@@ -2,7 +2,7 @@
 
 int main()
 {
-    int nums[] = {1, 2, 3, 4, 5, 6, 7};
+    int nums[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     int size;
     int *retColSize;
     int **y = permute(nums, sizeof(nums)/sizeof(int), &size, &retColSize);
