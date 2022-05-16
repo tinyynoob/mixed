@@ -27,8 +27,6 @@ static void enqueue(struct queue *q, int row, int column)
 
 static struct qnode *dequeue(struct queue *q)
 {
-    if (!q)
-        return NULL;
     struct qnode *ret = q->head;
     q->head = q->head->next;
     if (!q->head)
@@ -42,18 +40,18 @@ int shortestPathBinaryMatrix(int** grid, int gridSize, int* gridColSize)
     if (grid[0][0])
         return -1;
     // surround grid by 1s to prevent access exceeding
-    int **closure = (int **) malloc(sizeof(int *) * (gridSize + 2));
-    closure[0] = (int *) malloc(sizeof(int) * (gridSize + 2));
+    short **closure = (short **) malloc(sizeof(short *) * (gridSize + 2));
+    closure[0] = (short *) malloc(sizeof(short) * (gridSize + 2));
     for (int j = 0; j < gridSize + 2; j++)
         closure[0][j] = 1;
     for (int i = 1; i < gridSize + 1; i++) {
-        closure[i] = (int *) malloc(sizeof(int) * (gridSize + 2));
+        closure[i] = (short *) malloc(sizeof(short) * (gridSize + 2));
         closure[i][0] = 1;
         for (int j = 1; j < gridSize + 1; j++)
             closure[i][j] = grid[i - 1][j - 1];
         closure[i][gridSize + 1] = 1;
     }
-    closure[gridSize + 1] = (int *) malloc(sizeof(int) * (gridSize + 2));
+    closure[gridSize + 1] = (short *) malloc(sizeof(short) * (gridSize + 2));
     for (int j = 0; j < gridSize + 2; j++)
         closure[gridSize + 1][j] = 1;
 
@@ -62,7 +60,7 @@ int shortestPathBinaryMatrix(int** grid, int gridSize, int* gridColSize)
     q->tail = &q->head;
     q->size = 0;
     enqueue(q, 1, 1);
-    closure[1][1] = 2; // set to 2 if traversed
+    closure[1][1] = 2; // set to 2 if traversed or cant tranverse
     int ans = 1;
     while (q->head) {
         int sz = q->size;
@@ -70,30 +68,13 @@ int shortestPathBinaryMatrix(int** grid, int gridSize, int* gridColSize)
             struct qnode *curr = dequeue(q);
             if (curr->row == gridSize && curr->column == gridSize)
                 goto end;
-            if (!closure[curr->row - 1][curr->column - 1])
-                enqueue(q, curr->row - 1, curr->column - 1);
-            if (!closure[curr->row - 1][curr->column])
-                enqueue(q, curr->row - 1, curr->column);
-            if (!closure[curr->row - 1][curr->column + 1])
-                enqueue(q, curr->row - 1, curr->column + 1);
-            if (!closure[curr->row][curr->column - 1])
-                enqueue(q, curr->row, curr->column - 1);
-            if (!closure[curr->row][curr->column + 1])
-                enqueue(q, curr->row, curr->column + 1);
-            if (!closure[curr->row + 1][curr->column - 1])
-                enqueue(q, curr->row + 1, curr->column - 1);
-            if (!closure[curr->row + 1][curr->column])
-                enqueue(q, curr->row + 1, curr->column);
-            if (!closure[curr->row + 1][curr->column + 1])
-                enqueue(q, curr->row + 1, curr->column + 1);
-            closure[curr->row - 1][curr->column - 1] = 2;
-            closure[curr->row - 1][curr->column] = 2;
-            closure[curr->row - 1][curr->column + 1] = 2;
-            closure[curr->row][curr->column - 1] = 2;
-            closure[curr->row][curr->column + 1] = 2;
-            closure[curr->row + 1][curr->column - 1] = 2;
-            closure[curr->row + 1][curr->column] = 2;
-            closure[curr->row + 1][curr->column + 1] = 2;
+            const int dirvec[8][2] = {{-1, -1}, {-1, 0}, {-1, +1}, {0, -1}, {0, +1},
+                                      {+1, -1}, {+1, 0}, {+1, +1}};
+            for (int i = 0; i < 8; i++) {
+                if (!closure[curr->row + dirvec[i][0]][curr->column + dirvec[i][1]])
+                    enqueue(q, curr->row + dirvec[i][0], curr->column + dirvec[i][1]);
+                closure[curr->row + dirvec[i][0]][curr->column + dirvec[i][1]] = 2;
+            }
             free(curr);
         }
         ans++;
