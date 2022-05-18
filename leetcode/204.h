@@ -2,6 +2,8 @@
 #include <stdbool.h>
 
 
+#include <limits.h>
+
 int countPrimes(int n)
 {
     if (n <= 1)
@@ -11,8 +13,11 @@ int countPrimes(int n)
     mark[0] = true;
     mark[1] = true;
     for (int i = 2; i < n;) {
-        for (int j = 1; i * j < n; j++)
-            mark[i * j] = true;
+        mark[i] = true;
+        if (i < INT_MAX / i + 1) { // to prevent overflow
+            for (int j = i; i * j < n; j++)
+                mark[i * j] = true;
+        }
         ans++;
         while (i < n && mark[i])  // find next
             i++;
@@ -20,3 +25,4 @@ int countPrimes(int n)
     free(mark);
     return ans;
 }
+
