@@ -6,6 +6,9 @@ fibonacci_tree: fibonacci_tree.c
 
 .PHONY: maze course_list
 
+serial2dot: serial2dot.c
+	$(cc) -o $@ $^
+
 maze:
 	clang-format -i maze.c
 	$(cc) -o maze maze.c
@@ -23,3 +26,4 @@ clean:
 	-rm fibonacci_tree fibonacci_tree.dot
 	-rm maze
 	-rm course_list
+	-rm serial2dot serialBST.dot
