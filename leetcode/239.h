@@ -1,7 +1,12 @@
 
+struct data {
+    int index;
+    int value;
+};
+
 struct rbuf {   // ring buffer
     int capacity;
-    int *data;
+    struct data *data;
     int start;
     int end;
     int length;
@@ -30,7 +35,7 @@ static struct rbuf *rbuf_init(int capacity)
 {
     struct rbuf *rbf = (struct rbuf *) malloc(sizeof(struct rbuf));
     rbf->capacity = capacity;
-    rbf->data = (int *) malloc(sizeof(int) * rbf->capacity);
+    rbf->data = (struct data *) malloc(sizeof(struct data) * rbf->capacity);
     rbf->start = 0;
     rbf->end = 0;
     rbf->length = 0;
@@ -45,20 +50,27 @@ static inline bool rbuf_isempty(struct rbuf *rbf)
 // no empty check
 static inline int rbuf_get_start(struct rbuf *rbf)
 {
-    return rbf->data[rbf->start];
+    return rbf->data[rbf->start].value;
+}
+
+// no empty check
+static inline int rbuf_get_start_index(struct rbuf *rbf)
+{
+    return rbf->data[rbf->start].index;
 }
 
 // no empty check
 static inline int rbuf_get_end(struct rbuf *rbf)
 {
-    return rbf->data[(rbf->end - 1) & (rbf->capacity - 1)];
+    return rbf->data[(rbf->end - 1) & (rbf->capacity - 1)].value;
 }
 
 // push at end
-static void rbuf_push(struct rbuf *rbf, int data)
+static void rbuf_push(struct rbuf *rbf, int index, int value)
 {
     // assume never full
-    rbf->data[rbf->end] = data;
+    rbf->data[rbf->end].index = index;
+    rbf->data[rbf->end].value = value;
     rbf->end = (rbf->end + 1) & (rbf->capacity - 1);
     rbf->length++;
 }
@@ -95,24 +107,24 @@ static void rbuf_destroy(struct rbuf *rbf)
 int* maxSlidingWindow(int* nums, int numsSize, int k, int* returnSize)
 {
     struct rbuf *rbf = rbuf_init(rounding_up_base2(k));
-    rbuf_push(rbf, nums[0]);
+    rbuf_push(rbf, 0, nums[0]);
     for (int i = 1; i < k; i++) {
         while (!rbuf_isempty(rbf) && rbuf_get_end(rbf) < nums[i])
             rbuf_pop_end(rbf);
-        rbuf_push(rbf, nums[i]);
+        rbuf_push(rbf, i, nums[i]);
     }
     
     *returnSize = numsSize - k + 1;
     int *ans = (int *) malloc(sizeof(int) * (*returnSize));
     ans[0] = rbuf_get_start(rbf);
     for (int i = k; i < numsSize; i++) {
-        rbuf_pop_start(rbf);
+        if (rbuf_get_start_index(rbf) == i - k)
+            rbuf_pop_start(rbf);
         while (!rbuf_isempty(rbf) && rbuf_get_end(rbf) < nums[i])
             rbuf_pop_end(rbf);
-        rbuf_push(rbf, nums[i]);
+        rbuf_push(rbf, i, nums[i]);
         ans[i - k + 1] = rbuf_get_start(rbf);
     }
-    
     rbuf_destroy(rbf);
     return ans;
 }
