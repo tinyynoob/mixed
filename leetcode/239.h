@@ -1,91 +1,130 @@
-#include <stdlib.h>
-#include <stdint.h>
 
-
-/**
- * Note: The returned array must be malloced, assume caller calls free().
- */
-
-struct idxnode {
+struct data {
     int index;
-    struct idxnode *next;
+    int value;
 };
 
-struct heap {
-    int size;
-    int *value;
-    struct idxnode **lists;   // array of lists
+struct rbuf {   // ring buffer
+    int capacity;
+    struct data *data;
+    int start;
+    int end;
+    int length;
 };
 
-static inline int ilog32(uint32_t v)
+int rounding_up_base2(uint32_t v)
 {
-    uint32_t ans = v > 0;
-    int m = (v > 0xFFFFU) << 4;
+    int shift = v > 0;
+    int m = (v > (uint32_t) 0xFFFFU) << 4;
     v >>= m;
-    ans |= m;
+    shift |= m;
     m = (v > 0xFFU) << 3;
     v >>= m;
-    ans |= m;
+    shift |= m;
     m = (v > 0xFU) << 2;
     v >>= m;
-    ans |= m;
-    m = (v > 0x3u) << 1;
+    shift |= m;
+    m = (v > 0x3U) << 1;
     v >>= m;
-    ans |= m;
-    ans += (v > 1);
-    return ans;
+    shift |= m;
+    shift += (v > 1);
+    return 1 << shift;
 }
 
-static struct heap *heap_init(int window_size)
+static struct rbuf *rbuf_init(int capacity)
 {
-    struct heap *h = (struct heap *) malloc(sizeof(struct heap));
-    h->size = (1 << ilog32(window_size)) - 1;
-    h->value = (int *) malloc(sizeof(int) * h->size);
-    h->lists = (struct idxnode **) malloc(sizeof(struct idxnode *) * h->size);
-    for (int i = 0; i < h->size; i++)
-        h->lists[i] = NULL;
-    return h;
+    struct rbuf *rbf = (struct rbuf *) malloc(sizeof(struct rbuf));
+    rbf->capacity = capacity;
+    rbf->data = (struct data *) malloc(sizeof(struct data) * rbf->capacity);
+    rbf->start = 0;
+    rbf->end = 0;
+    rbf->length = 0;
+    return rbf;
 }
 
+static inline bool rbuf_isempty(struct rbuf *rbf)
+{
+    return !rbf->length;
+}
 
+// no empty check
+static inline int rbuf_get_start(struct rbuf *rbf)
+{
+    return rbf->data[rbf->start].value;
+}
 
+// no empty check
+static inline int rbuf_get_start_index(struct rbuf *rbf)
+{
+    return rbf->data[rbf->start].index;
+}
+
+// no empty check
+static inline int rbuf_get_end(struct rbuf *rbf)
+{
+    return rbf->data[(rbf->end - 1) & (rbf->capacity - 1)].value;
+}
+
+// push at end
+static void rbuf_push(struct rbuf *rbf, int index, int value)
+{
+    // assume never full
+    rbf->data[rbf->end].index = index;
+    rbf->data[rbf->end].value = value;
+    rbf->end = (rbf->end + 1) & (rbf->capacity - 1);
+    rbf->length++;
+}
+
+static bool rbuf_pop_start(struct rbuf *rbf)
+{
+    if (!rbf->length)
+        return false;
+    rbf->start = (rbf->start + 1) & (rbf->capacity - 1);
+    rbf->length--;
+    return true;
+}
+
+static bool rbuf_pop_end(struct rbuf *rbf)
+{
+    if (!rbf->length)
+        return false;
+    rbf->end = (rbf->end - 1) & (rbf->capacity - 1);
+    rbf->length--;
+    return true;
+}
+
+static void rbuf_destroy(struct rbuf *rbf)
+{
+    if (!rbf)
+        return NULL;
+    free(rbf->data);
+    free(rbf);
+}
+
+/**
+ * Note: The returned array must be malloced, assume caller calls fcapacity().
+ */
 int* maxSlidingWindow(int* nums, int numsSize, int k, int* returnSize)
 {
-    struct heap *h = heap_init(k);
-
-
-
-    int left = 0, right = 0;
+    struct rbuf *rbf = rbuf_init(rounding_up_base2(k));
+    rbuf_push(rbf, 0, nums[0]);
+    for (int i = 1; i < k; i++) {
+        while (!rbuf_isempty(rbf) && rbuf_get_end(rbf) < nums[i])
+            rbuf_pop_end(rbf);
+        rbuf_push(rbf, i, nums[i]);
+    }
+    
     *returnSize = numsSize - k + 1;
     int *ans = (int *) malloc(sizeof(int) * (*returnSize));
-    ans[0] = nums[0];
-    int max = nums[0], maxidx = 0;  // maxidx is chosen right-most
-    for (int i = 1; i < k; i++) {
-        right++;
-        if (nums[right] >= max) {
-            max = nums[right];
-            maxidx = right;
-        }
+    ans[0] = rbuf_get_start(rbf);
+    for (int i = k; i < numsSize; i++) {
+        if (rbuf_get_start_index(rbf) == i - k)
+            rbuf_pop_start(rbf);
+        while (!rbuf_isempty(rbf) && rbuf_get_end(rbf) < nums[i])
+            rbuf_pop_end(rbf);
+        rbuf_push(rbf, i, nums[i]);
+        ans[i - k + 1] = rbuf_get_start(rbf);
     }
-    ans[0] = max;
-
-    for (int i = 1; i < (*returnSize); i++) {
-        right++;
-        if (maxidx == left) {   // max is gone, need rescan
-            max = nums[left + 1];
-            for (int j = left + 1; j <= right; j++) {
-                if (nums[j] >= max) {
-                    max = nums[j];
-                    maxidx = j;
-                }
-            }
-        } else {
-            if (nums[right] >= max) {
-                max = nums[right];
-                maxidx = right;
-            }
-        }
-        ans[++left] = max;
-    }
+    rbuf_destroy(rbf);
     return ans;
 }
