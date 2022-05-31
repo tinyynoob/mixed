@@ -8,6 +8,7 @@
 !Makefile
 !*.c
 !*.h
+!*.s
 !*.cpp
 !*.asm
 !*.sh
