@@ -1,4 +1,42 @@
 
+struct listnode {
+    int index;
+    int value;
+    struct listnode *next;
+    struct listnode *prev;
+};
+
+void mono_enqueue(struct listnode **head, struct listnode **tail, int index, int value)
+{
+    struct listnode *new = (struct listnode *) malloc(sizeof(struct listnode));
+    new->index = index;
+    new->value = value;
+    struct listnode *it = *tail;
+    while (it && it->value <= new->value) {
+        struct listnode *tmp = it;
+        it = it->prev;
+        free(tmp);
+    }
+    new->prev = it;
+    if (it)
+        it->next = new;
+    else
+        *head = new;
+    new->next = NULL;
+    *tail = new;
+}
+
+void mono_dequeue(struct listnode **head, struct listnode **tail)
+{
+    struct listnode *tmp = *head;
+    *head = (*head)->next;
+    free(tmp);
+    if (*head)
+        (*head)->prev = NULL;
+    else
+        *tail = NULL;
+}
+
 
 int maxResult_dp(int *nums, int numsSize, int k);
 
@@ -36,26 +74,21 @@ end:
 
 int maxResult_dp(int *nums, int numsSize, int k)
 {
-    int *dp = (int *) malloc(sizeof(int) * numsSize);
-    dp[0] = nums[0];
+    struct listnode *head = NULL, *tail = NULL;
+    mono_enqueue(&head, &tail, 0, nums[0]);
     int index = 1;
-    /* compute [1, k) */
-    for (index = 1; index < k && index < numsSize; index++) {
-        int max = dp[0];
-        for (int i = 1; i < index; i++)
-            if (dp[i] > max)
-                max = dp[i];
-        dp[index] = max + nums[index];
-    }
-    /* compute [k, numsSize) */
+    for (index = 1 ; index < k && index < numsSize; index++)
+        mono_enqueue(&head, &tail, index, head->value + nums[index]);
     for (index = k; index < numsSize; index++) {
-        int max = dp[index - k];
-        for (int i = index - k + 1; i < index; i++)
-            if (dp[i] > max)
-                max = dp[i];
-        dp[index] = max + nums[index];
+        mono_enqueue(&head, &tail, index, head->value + nums[index]);
+        if (head->index == index - k)
+            mono_dequeue(&head, &tail);
     }
-    int ans = dp[numsSize - 1];
-    free(dp);
+    int ans = tail->value;
+    while (head) {
+        struct listnode *tmp = head;
+        head = head->next;
+        free(tmp);
+    }
     return ans;
 }
