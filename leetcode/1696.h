@@ -1,94 +1,73 @@
 
-struct listnode {
+
+
+struct entry {
     int index;
     int value;
-    struct listnode *next;
-    struct listnode *prev;
 };
 
-void mono_enqueue(struct listnode **head, struct listnode **tail, int index, int value)
+/* ring buffer
+ * interval: [start, end)
+ */
+struct rbuf {
+    unsigned start;
+    unsigned end;
+    unsigned size;
+    struct entry *buf;
+};
+
+
+unsigned roundup_power2(int v)
 {
-    struct listnode *new = (struct listnode *) malloc(sizeof(struct listnode));
-    new->index = index;
-    new->value = value;
-    struct listnode *it = *tail;
-    while (it && it->value <= new->value) {
-        struct listnode *tmp = it;
-        it = it->prev;
-        free(tmp);
+    unsigned u = v;
+    u |= u >> 1;
+    u |= u >> 2;
+    u |= u >> 4;
+    u |= u >> 8;
+    u |= u >> 16;
+    return u + 1;
+}
+
+void mono_add(struct rbuf *rb, int index, int value)
+{
+    if (rb->start == rb->end) {
+        rb->buf[rb->end].index = index;
+        rb->buf[rb->end].value = value;
+        rb->end = (rb->end + 1) & (rb->size - 1);
+        return;
     }
-    new->prev = it;
-    if (it)
-        it->next = new;
+    unsigned idx = (rb->end - 1) & (rb->size - 1);
+    while (idx != rb->start && rb->buf[idx].value <= value)
+        idx = (idx - 1) & (rb->size - 1);
+
+    if (idx == rb->start && rb->buf[idx].value <= value)
+        ;
     else
-        *head = new;
-    new->next = NULL;
-    *tail = new;
+        idx = (idx + 1) & (rb->size - 1);
+    rb->buf[idx].index = index;
+    rb->buf[idx].value = value;
+    rb->end = (idx + 1) & (rb->size - 1);
 }
 
-void mono_dequeue(struct listnode **head, struct listnode **tail)
+void mono_del(struct rbuf *rb)
 {
-    struct listnode *tmp = *head;
-    *head = (*head)->next;
-    free(tmp);
-    if (*head)
-        (*head)->prev = NULL;
-    else
-        *tail = NULL;
+    rb->start = (rb->start + 1) & (rb->size - 1);
 }
-
-
-int maxResult_dp(int *nums, int numsSize, int k);
 
 int maxResult(int* nums, int numsSize, int k)
 {
-    int ans = nums[0], curr = 0;
-loop:;
-    while (curr < numsSize - 1) {
-        int next = curr + 1;
-        printf("curr = %d, ans = %d\n", curr, ans);
-        for (; next <= curr + k; next++) {
-            if (next >= numsSize) {
-                ans += nums[numsSize - 1];
-                goto end;
-            } else if (nums[next] >= 0) {
-                ans += nums[next];
-                curr = next;
-                goto loop;
-            }
-        }
-        while (next < numsSize && nums[next] < 0)
-            next++;
-        if (next >= numsSize) {
-            ans += maxResult_dp(nums + curr, next - curr, k) - nums[curr];
-            goto end;
-        } else {
-            ans += maxResult_dp(nums + curr, next - curr + 1, k) - nums[curr];
-            curr = next;
-            goto loop;
-        }
-    }
-end:
-    return ans;
-}
-
-int maxResult_dp(int *nums, int numsSize, int k)
-{
-    struct listnode *head = NULL, *tail = NULL;
-    mono_enqueue(&head, &tail, 0, nums[0]);
-    int index = 1;
+    struct rbuf rb = {.start = 0, .end = 0, .size = roundup_power2(k)};
+    rb.buf = (struct entry *) malloc(sizeof(struct entry) * rb.size);
+    mono_add(&rb, 0, nums[0]);
+    int index;
     for (index = 1 ; index < k && index < numsSize; index++)
-        mono_enqueue(&head, &tail, index, head->value + nums[index]);
+        mono_add(&rb, index, rb.buf[rb.start].value + nums[index]);
     for (index = k; index < numsSize; index++) {
-        mono_enqueue(&head, &tail, index, head->value + nums[index]);
-        if (head->index == index - k)
-            mono_dequeue(&head, &tail);
+        mono_add(&rb, index, rb.buf[rb.start].value + nums[index]);
+        if (rb.buf[rb.start].index == index - k)
+            mono_del(&rb);
     }
-    int ans = tail->value;
-    while (head) {
-        struct listnode *tmp = head;
-        head = head->next;
-        free(tmp);
-    }
+    int ans = rb.buf[(rb.end - 1) & (rb.size - 1)].value;
+    free(rb.buf);
     return ans;
 }
